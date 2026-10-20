@@ -1,11 +1,62 @@
-/* 자리표시자. 단계 2에서 작성: 버튼 min-height 64px, touch-action: manipulation, 이미지·이모지·애니메이션 없음 */
 :root {
   font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
   font-size: 20px;
-  color: #1a1a1a;
+  color: #222;
   background: #fff;
 }
 body {
   margin: 0;
   padding: 16px;
 }
+#app, .child, .report, .experimenter {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* 버튼 */
+.btn {
+  min-height: 64px;
+  font-size: 1.3rem;
+  padding: 12px 20px;
+  touch-action: manipulation;
+  font-family: inherit;
+  color: #222;
+  background: #dbeafe;
+  border: 2px solid #9ec5f0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.btn:disabled { opacity: 0.6; cursor: default; }
+.btn-option { display: block; width: 100%; margin: 12px 0; text-align: left; }
+.btn-option.selected { border: 6px solid #1d4ed8; }
+.btn-primary { background: #bfdbfe; border-color: #3b82f6; }
+.btn-secondary { background: #f1f5f9; border-color: #cbd5e1; }
+
+/* 아이 화면 */
+.child { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.child-text { font-size: 1.4rem; line-height: 1.6; margin: 0 0 16px; }
+.handoff-text { font-size: 2rem; line-height: 1.6; text-align: center; margin: 48px 0; }
+.child .prompt { font-weight: bold; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
+
+/* 리포트 */
+.report p, .report li { font-size: 1.1rem; line-height: 1.6; }
+.report .source { font-size: 0.75rem; color: #666; }
+.thanks { font-size: 1.1rem; }
+
+/* 실험자 화면 */
+.experimenter { font-size: 1rem; }
+.experimenter .btn { font-size: 1.1rem; }
+.panel { border: 1px solid #ccc; border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
+.group { border: 1px solid #ddd; margin: 12px 0; padding: 8px 12px; }
+.field { display: block; margin: 12px 0; }
+.field-label { display: block; font-weight: bold; margin-bottom: 4px; }
+.field input[type="text"], .field input[type="password"], .field select { width: 100%; box-sizing: border-box; font-size: 1rem; padding: 10px; }
+.radio-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; min-height: 36px; }
+.note { color: #555; font-size: 0.9rem; }
+.warn { background: #fff4d6; border: 1px solid #e0b84a; padding: 8px 12px; border-radius: 6px; }
+.errors { color: #a11; font-size: 0.9rem; }
+.badge { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+th { background: #f1f5f9; }

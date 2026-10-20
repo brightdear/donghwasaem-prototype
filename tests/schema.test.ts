@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fixture from "./fixtures/mini.json";
+import heungbu from "../src/data/heungbu.json";
+import ant from "../src/data/ant.json";
 import { validateStory } from "../src/story/schema";
 
 // 위반 사례를 만들려고 fixture 복제본을 자유롭게 고친다
@@ -18,6 +20,13 @@ describe("validateStory", () => {
     expect(r.ok ? [] : r.errors).toEqual([]);
     expect(r.ok).toBe(true);
   });
+
+  for (const [name, real] of [["heungbu", heungbu], ["ant", ant]] as const) {
+    it(`실제 시나리오 ${name} 통과`, () => {
+      const r = validateStory(real);
+      expect(r.ok ? [] : r.errors).toEqual([]);
+    });
+  }
 
   it("객체가 아니면 실패", () => {
     expect(validateStory(null).ok).toBe(false);

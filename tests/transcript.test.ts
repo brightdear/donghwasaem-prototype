@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import fixture from "./fixtures/mini.json";
+import heungbu from "../src/data/heungbu.json";
+import ant from "../src/data/ant.json";
 import { CHARS_PER_MINUTE, countChars, enumeratePaths, renderTranscript } from "../src/story/transcript";
 import { VALID_CONDITIONS, conditionsSlug, type Conditions, type Story } from "../src/story/types";
 import { STRINGS } from "../src/ui/strings";
 
-const stories: Story[] = [fixture as unknown as Story];
-// 단계 5 이후 실제 두 편(src/data/heungbu.json, ant.json)을 여기에 추가한다.
+const stories: Story[] = [fixture as unknown as Story, heungbu as unknown as Story, ant as unknown as Story];
 
 function expectedPathCount(story: Story, c: Conditions): number {
   if (!c.branching) return 1;
