@@ -96,14 +96,16 @@ body:has(.child.has-scene) { background: #e9dfc9; padding: 0; overflow: hidden; 
 .child.has-scene .btn { min-height: 56px; font-size: clamp(0.95rem, 1.9vw, 1.4rem); border-radius: 28px; color: #3b2a17; }
 .child.has-scene .btn-primary { background: #f6c76b; border-color: #c2862a; padding: 10px 28px; }
 .child.has-scene .btn-secondary { background: rgba(255, 250, 238, 0.9); border-color: #d8c7a2; }
-/* 세로 화면: 펼침면을 위에 두고 글을 그 아래 종이에 둔다 */
+/* 세로 화면: 그림을 화면 전체에 채우고(양옆은 잘림) 글은 위, 보기는 아래에 그림 위로 얹는다 */
 @media (max-aspect-ratio: 1 / 1) {
-  body:has(.child.has-scene) { overflow: auto; padding: 16px; min-height: 100vh; box-sizing: border-box; }
-  .child.has-scene { position: static; transform: none; width: 100%; aspect-ratio: auto; box-shadow: none; overflow: visible; }
-  .child.has-scene .scene { position: relative; aspect-ratio: 3 / 2; border-radius: 10px; }
-  .child.has-scene .page-text, .child.has-scene .options, .child.has-scene .actions { position: static; max-width: none; margin: 16px 0; }
-  .child.has-scene .options { flex-direction: column; gap: 12px; }
-  .child.has-scene .child-text { font-size: 1.6rem; }
+  .child.has-scene { width: 100vw; height: 100vh; height: 100dvh; aspect-ratio: auto; box-shadow: none; }
+  /* 그림 상자는 3:2 그대로 높이에 맞추고 가운데 정렬(오버레이 % 좌표가 그림과 어긋나지 않게) */
+  .child.has-scene .scene { inset: 0 auto; left: 50%; height: 100%; width: auto; aspect-ratio: 3 / 2; transform: translateX(-50%); }
+  .child.has-scene .page-text { left: 4%; right: 4%; max-width: none; }
+  .child.has-scene .child-text { font-size: clamp(1.1rem, 5vw, 1.9rem); }
+  .child.has-scene .options { flex-direction: column; gap: 12px; bottom: 13%; }
+  .child.has-scene .btn-option { font-size: clamp(1rem, 4.4vw, 1.6rem); }
+  .child.has-scene .btn { font-size: clamp(1rem, 4vw, 1.4rem); }
 }
 /* 오버레이: 이야기와 일치하는 동작 1회 재생 후 끝 상태로 멈춤. 이 밖의 요소에는 애니메이션을 쓰지 않는다 */
 .overlay {
