@@ -109,12 +109,48 @@ describe("speak", () => {
     const { synth, tts, done } = setup();
     tts.speak("u1", "passage", "하나.");
     const u = synth.last();
-    vi.advanceTimersByTime(2999);
+    vi.advanceTimersByTime(3999);
     expect(done()).toHaveLength(0);
     vi.advanceTimersByTime(2);
     expect(done()).toEqual([{ utteranceId: "u1", type: "done", outcome: "watchdog" }]);
     u.onend?.();
     expect(done()).toHaveLength(1);
+  });
+
+  it("청크 3개짜리 긴 본문에서 각 청크가 제때 onend를 내면 watchdog이 발동하지 않는다", () => {
+    const { synth, tts, done } = setup(0.9);
+    const sentence = "가".repeat(59) + "."; // 60자 -> 청크 한도 60*220/0.9 ≈ 14667ms
+    tts.speak("u1", "passage", `${sentence} ${sentence} ${sentence}`);
+    // 예전 방식(전체 180자 x 120 / 0.9 = 24000ms)이면 셋째 청크 중에 끊겼을 시간 배분
+    for (let i = 0; i < 3; i++) {
+      expect(synth.spoken).toHaveLength(i + 1);
+      vi.advanceTimersByTime(13000);
+      expect(done()).toHaveLength(0);
+      synth.last().onend?.();
+    }
+    expect(done()).toEqual([{ utteranceId: "u1", type: "done", outcome: "ended" }]);
+    vi.advanceTimersByTime(120000);
+    expect(done()).toHaveLength(1);
+  });
+
+  it("한 청크가 멈추면 그 청크 한도 뒤에 watchdog 1회", () => {
+    const { synth, tts, done } = setup(1);
+    const sentence = "가".repeat(29) + "."; // 30자 -> 청크 한도 max(4000, 6600) = 6600ms
+    tts.speak("u1", "passage", `${sentence} ${sentence} ${sentence}`);
+    vi.advanceTimersByTime(5000);
+    synth.last().onend?.(); // 첫 청크 정상 종료
+    expect(synth.spoken).toHaveLength(2);
+    const stuck = synth.last();
+    const cancelsBefore = synth.cancelCount;
+    vi.advanceTimersByTime(6599);
+    expect(done()).toHaveLength(0);
+    vi.advanceTimersByTime(2);
+    expect(done()).toEqual([{ utteranceId: "u1", type: "done", outcome: "watchdog" }]);
+    expect(synth.cancelCount).toBe(cancelsBefore + 1);
+    stuck.onend?.(); // 늦은 onend 무시
+    vi.advanceTimersByTime(120000);
+    expect(done()).toHaveLength(1);
+    expect(synth.spoken).toHaveLength(2);
   });
 
   it("새 speak는 이전 발화를 cancelled로 닫고, 이전 onend는 새 발화에 영향 없음", () => {

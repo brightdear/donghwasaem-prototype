@@ -67,6 +67,15 @@ describe("store", () => {
     expect(store.getSession(m2.session_id)!.meta.status).toBe("open");
   });
 
+  it("abandoned detail.last_screen이 마지막 screen_enter 값", () => {
+    const { store, add, meta } = setup("P01", 1000);
+    add({ event_type: "screen_enter", at: 0, screen: "passage" });
+    add({ event_type: "screen_enter", at: 10, screen: "choice" });
+    store.abandonOpenSessions("", 4000);
+    const end = store.getSession(meta.session_id)!.events.at(-1)!;
+    expect(end.detail).toMatchObject({ status: "abandoned", last_screen: "choice", last_seq: 2 });
+  });
+
   it("dropout은 session_end 없는 open 세션에 1회, t_ms null, last_seq", () => {
     const { store, add, meta } = setup();
     add({ event_type: "session_start", at: 0 });

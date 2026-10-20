@@ -13,6 +13,8 @@ export interface ExperimenterDeps {
   koVoiceFound: boolean;
   storagePersisted: boolean | null;
   otherTabOpen?: boolean;
+  /** 저장 실패 등 로그 경고 문구(있으면 실험자 화면 경고로 표시) */
+  storageWarning?: string;
   onHandoff(cfg: {
     participantCode: string;
     story: Story;
@@ -113,6 +115,9 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
     warnings.appendChild(
       el("p", "warn", "저장 보호 안 됨: 브라우저가 기록을 지울 수 있어요. 세션마다 내보내기를 해 주세요."),
     );
+  }
+  if (deps.storageWarning) {
+    warnings.appendChild(el("p", "warn", deps.storageWarning));
   }
   if (deps.otherTabOpen) {
     warnings.appendChild(el("p", "warn", "다른 탭에서도 이 앱이 열려 있어요. 한 탭만 사용하세요."));
@@ -305,6 +310,11 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
       ) {
         return;
       }
+      let manualReading = state.manualReading;
+      if (!deps.koVoiceFound && !manualReading) {
+        if (!window.confirm("한국어 음성이 없어요. 실험자가 직접 읽는 모드로 진행할까요?")) return;
+        manualReading = true;
+      }
       const conditions = currentConditions();
       patchSettings({ defaultConditions: conditions });
       deps.onHandoff({
@@ -312,7 +322,7 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
         story: entry.story,
         conditions,
         confirmMode: advanced ? state.confirmMode : "double",
-        manualReading: state.manualReading,
+        manualReading,
       });
     }),
   );

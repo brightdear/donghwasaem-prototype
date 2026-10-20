@@ -28,8 +28,26 @@ const nowIso = () => new Date().toISOString();
 function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.settings);
-    const parsed = raw ? (JSON.parse(raw) as Partial<Settings>) : {};
-    return { ...DEFAULT_SETTINGS, ...parsed };
+    const p = (raw ? JSON.parse(raw) : {}) as Record<string, unknown>;
+    const d = DEFAULT_SETTINGS;
+    const dc = p.defaultConditions as Record<string, unknown> | null | undefined;
+    const dcOk =
+      !!dc &&
+      typeof dc === "object" &&
+      typeof dc.branching === "boolean" &&
+      (dc.mismatch === "rewind" || dc.mismatch === "converge" || dc.mismatch === "altEnding" || dc.mismatch === "na") &&
+      (typeof dc.askWhy === "boolean" || dc.askWhy === "na");
+    return {
+      apiKey: typeof p.apiKey === "string" ? p.apiKey : d.apiKey,
+      ttsRate:
+        typeof p.ttsRate === "number" && Number.isFinite(p.ttsRate) && p.ttsRate >= 0.5 && p.ttsRate <= 1.5
+          ? p.ttsRate
+          : d.ttsRate,
+      voiceURI: typeof p.voiceURI === "string" ? p.voiceURI : d.voiceURI,
+      confirmMode: p.confirmMode === "double" || p.confirmMode === "single" ? p.confirmMode : d.confirmMode,
+      manualReading: typeof p.manualReading === "boolean" ? p.manualReading : d.manualReading,
+      defaultConditions: dcOk ? (dc as unknown as Settings["defaultConditions"]) : { ...d.defaultConditions },
+    };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }
@@ -66,6 +84,16 @@ async function boot(root: HTMLElement): Promise<void> {
   });
   const store = createStore(localStorage);
   store.markDropouts(nowIso());
+  const STORAGE_FULL_MSG = "로그 저장에 실패했어요(저장 공간 부족 가능). 지금 CSV를 내보내고 로그를 비운 뒤 다시 시도하세요.";
+  // runner.ts는 수정하지 않고, appendEvent 실패를 main에서 잡기 위해 store를 감싼다.
+  const runnerStore: typeof store = {
+    ...store,
+    appendEvent(id, ev) {
+      const res = store.appendEvent(id, ev);
+      if (!res.ok) deps.storageWarning = STORAGE_FULL_MSG;
+      return res;
+    },
+  };
   const storagePersisted = await requestPersist();
 
   // 현재 세션 상태
@@ -81,7 +109,7 @@ async function boot(root: HTMLElement): Promise<void> {
   };
   const makeTts = (s: Settings): Tts => createTts({ rate: s.ttsRate, voiceURI: s.voiceURI, onEvent: onTtsEvent });
   let tts = makeTts(settings);
-  const koVoice = await tts.findKoVoice();
+  let koVoice = await tts.findKoVoice();
   const voices = tts.listKoVoices().map((v) => ({ name: v.name, voiceURI: v.voiceURI }));
 
   const storyById = (id: string): Story | undefined => stories.find((s) => s.story.id === id)?.story;
@@ -95,7 +123,12 @@ async function boot(root: HTMLElement): Promise<void> {
       saveSettingsToStorage(s);
       if (ttsChanged) {
         tts.cancel();
-        tts = makeTts(s);
+        const next = makeTts(s);
+        tts = next;
+        // 새 tts의 voice를 다시 잡는다. 완료 전에는 이전 값 유지.
+        void next.findKoVoice().then((v) => {
+          if (tts === next) koVoice = v;
+        });
       }
     },
     stories,
@@ -108,7 +141,7 @@ async function boot(root: HTMLElement): Promise<void> {
       // 클릭 핸들러 안에서 동기로 호출된다(iOS TTS 잠금 해제).
       tts.unlock();
       const epoch = Date.now();
-      store.abandonOpenSessions("", epoch, "experimenter");
+      store.abandonOpenSessions("", epoch);
       const voiceName =
         (settings.voiceURI && voices.find((v) => v.voiceURI === settings.voiceURI)?.name) || koVoice?.name || null;
       const m: SessionMeta = {
@@ -124,11 +157,16 @@ async function boot(root: HTMLElement): Promise<void> {
         voice: voiceName,
       };
       const created = store.createSession(m);
-      if (!created.ok) console.warn(`[main] 세션 생성 실패(${created.reason})`);
+      if (!created.ok) {
+        deps.storageWarning = STORAGE_FULL_MSG;
+        window.alert("저장 공간이 부족해 세션을 시작할 수 없어요. 로그를 내보내고 비운 뒤 다시 시도하세요.");
+        return;
+      }
       meta = m;
       sessionActive = true;
       hiddenLogged = false;
       mode = "child";
+      syncCorner();
       root.textContent = "";
       const story = cfg.story;
       const r = createRunner({
@@ -136,7 +174,7 @@ async function boot(root: HTMLElement): Promise<void> {
         conditions: cfg.conditions,
         engineSettings: { manualReading: cfg.manualReading, confirmMode: cfg.confirmMode },
         meta: m,
-        store,
+        store: runnerStore,
         tts: cfg.manualReading ? null : tts,
         clock,
         nowIso,
@@ -158,6 +196,7 @@ async function boot(root: HTMLElement): Promise<void> {
     },
     onClearLogs() {
       store.clearSessions();
+      deps.storageWarning = undefined;
     },
     auditFor(record) {
       const s = storyById(record.meta.story_id);
@@ -174,6 +213,7 @@ async function boot(root: HTMLElement): Promise<void> {
     runner = null;
     meta = null;
     mode = "experimenter";
+    syncCorner();
     renderExperimenter(root, deps);
   }
 
@@ -183,10 +223,16 @@ async function boot(root: HTMLElement): Promise<void> {
     if (!m || !r) return;
     sessionActive = false;
     mode = "parent";
+    syncCorner();
+    const token = m.session_id;
+    const stale = () => meta?.session_id !== token || mode !== "parent";
     store.setStatus(m.session_id, "completed", undefined, nowIso(), r.elapsedMs());
     const late = (ev: Parameters<typeof lateEvent>[1]) => {
       const res = store.appendLateEvent(m.session_id, lateEvent(m, ev, nowIso(), r.elapsedMs()));
-      if (!res.ok) console.warn(`[main] ${ev.event_type} 저장 실패(${res.reason})`);
+      if (!res.ok) {
+        deps.storageWarning = STORAGE_FULL_MSG;
+        console.warn(`[main] ${ev.event_type} 저장 실패(${res.reason})`);
+      }
     };
     renderParentHandoff(root, () => {
       void (async () => {
@@ -196,6 +242,7 @@ async function boot(root: HTMLElement): Promise<void> {
           return;
         }
         const result = await generateReport(summarize(record, story), settings.apiKey);
+        if (stale()) return;
         late({
           event_type: "report_source",
           report_source: result.source,
@@ -244,23 +291,39 @@ async function boot(root: HTMLElement): Promise<void> {
     ch.postMessage("hello");
   }
 
-  // 실험자 복귀: 아이·부모 화면 배경(버튼 밖)을 2초 길게 누르기
+  // 실험자 복귀: 화면 좌상단 숨은 영역(80x80, 투명)을 2초 길게 누른 뒤 확인
+  const corner = document.createElement("div");
+  corner.setAttribute("aria-hidden", "true");
+  Object.assign(corner.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "80px",
+    height: "80px",
+    zIndex: "1000",
+    background: "transparent",
+    touchAction: "none",
+    display: "none",
+  });
+  document.body.appendChild(corner);
+  function syncCorner(): void {
+    corner.style.display = mode === "experimenter" ? "none" : "block";
+  }
   let pressTimer: ReturnType<typeof setTimeout> | null = null;
   const clearPress = () => {
     if (pressTimer !== null) clearTimeout(pressTimer);
     pressTimer = null;
   };
-  root.addEventListener("pointerdown", (e) => {
+  corner.addEventListener("pointerdown", () => {
     if (mode === "experimenter") return;
-    const t = e.target as Element | null;
-    if (t && t.closest("button, a, input, select, textarea")) return;
     clearPress();
     pressTimer = setTimeout(() => {
       pressTimer = null;
-      showExperimenter();
+      if (mode === "experimenter") return;
+      if (window.confirm("실험자 화면으로 돌아갈까요? 진행 중인 세션은 중단됩니다.")) showExperimenter();
     }, LONG_PRESS_MS);
   });
-  for (const type of ["pointerup", "pointercancel", "pointerleave"] as const) root.addEventListener(type, clearPress);
+  for (const type of ["pointerup", "pointercancel", "pointerleave"] as const) corner.addEventListener(type, clearPress);
   root.addEventListener("contextmenu", (e) => {
     if (mode !== "experimenter") e.preventDefault();
   });

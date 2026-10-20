@@ -142,13 +142,17 @@ export function createStore(storage: Storage) {
     },
 
     /** 새 세션 시작 시: 이전 open 세션을 abandoned로. atMs = 현재 epoch ms. */
-    abandonOpenSessions(exceptId: string, atMs: number, lastScreenName: string | null): void {
+    abandonOpenSessions(exceptId: string, atMs: number, lastScreenName?: string | null): void {
       for (const rec of api.findOpenSessions()) {
         if (rec.meta.session_id === exceptId) continue;
+        const detail =
+          lastScreenName === undefined
+            ? { last_screen: lastScreen(rec), last_seq: lastSeq(rec) }
+            : { last_screen: lastScreenName };
         api.setStatus(
           rec.meta.session_id,
           "abandoned",
-          { last_screen: lastScreenName },
+          detail,
           new Date(atMs).toISOString(),
           atMs - rec.meta.started_epoch_ms,
         );

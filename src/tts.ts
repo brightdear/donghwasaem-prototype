@@ -46,6 +46,8 @@ interface Active {
   utteranceId: string;
   finished: boolean;
   timer: unknown;
+  // 청크(문장)마다 새로 거는 워치독. 다음 청크 시작 시 재설정
+  chunkTimer: unknown;
   // Chrome GC로 onend가 누락되는 것을 막기 위해 재생 중 utterance를 붙잡아 둔다
   held: SpeechSynthesisUtterance[];
 }
@@ -65,6 +67,7 @@ export function createTts(opts: TtsOptions, deps: TtsDeps = {}): Tts {
     if (a.finished) return;
     a.finished = true;
     clearT(a.timer);
+    clearT(a.chunkTimer);
     a.held.length = 0;
     if (active === a) active = null;
     opts.onEvent({ utteranceId: a.utteranceId, type: "done", outcome, ...(detail ? { detail } : {}) });
@@ -83,7 +86,7 @@ export function createTts(opts: TtsOptions, deps: TtsDeps = {}): Tts {
   function speak(utteranceId: string, _kind: SpeakKind, text: string): void {
     if (active) finish(active, "cancelled");
     const myGen = ++gen;
-    const a: Active = { gen: myGen, utteranceId, finished: false, timer: null, held: [] };
+    const a: Active = { gen: myGen, utteranceId, finished: false, timer: null, chunkTimer: null, held: [] };
     active = a;
     const chunks = splitSentences(text);
     const chars = chunks.reduce((n, c) => n + c.length, 0);
@@ -96,15 +99,19 @@ export function createTts(opts: TtsOptions, deps: TtsDeps = {}): Tts {
       return;
     }
 
-    a.timer = setT(() => {
-      if (a.gen !== myGen) return;
+    const fireWatchdog = (): void => {
+      if (a.gen !== myGen || a.finished) return;
       finish(a, "watchdog");
       try {
         synth.cancel();
       } catch {
         /* 무시 */
       }
-    }, Math.max(3000, (chars * 120) / rate));
+    };
+    const chunkLimit = (c: string): number => Math.max(4000, (c.length * 220) / rate);
+    // 전체 발화 상한은 넉넉히 둔다(청크 한도 합보다 짧지 않게). 실제 멈춤 감지는 청크별 워치독이 맡는다
+    const totalLimit = Math.max((chars * 300) / rate + 5000, chunks.reduce((n, c) => n + chunkLimit(c), 0));
+    a.timer = setT(fireWatchdog, totalLimit);
 
     try {
       synth.cancel(); // 이전 잔여 대기열 제거. 이미 닫힌 이전 발화의 늦은 onend는 세대 번호로 무시
@@ -119,6 +126,8 @@ export function createTts(opts: TtsOptions, deps: TtsDeps = {}): Tts {
       u.lang = "ko-KR";
       if (voice) u.voice = voice;
       a.held.push(u);
+      clearT(a.chunkTimer);
+      a.chunkTimer = setT(fireWatchdog, chunkLimit(chunks[i] as string));
       if (i === 0) {
         u.onstart = () => {
           if (a.gen !== myGen || a.finished) return;
@@ -127,6 +136,8 @@ export function createTts(opts: TtsOptions, deps: TtsDeps = {}): Tts {
       }
       u.onend = () => {
         if (a.gen !== myGen || a.finished) return;
+        clearT(a.chunkTimer);
+        a.chunkTimer = null;
         if (i + 1 < chunks.length) play(i + 1);
         else finish(a, "ended");
       };

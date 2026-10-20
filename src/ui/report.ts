@@ -18,8 +18,15 @@ export function renderParentHandoff(root: HTMLElement, onContinue: () => void): 
   wrap.appendChild(el("p", "handoff-text", STRINGS.parentHandoff));
   const b = el("button", "btn btn-primary", "부모님이 보기");
   b.type = "button";
-  b.addEventListener("click", onContinue);
+  const status = el("p", "note");
+  b.addEventListener("click", () => {
+    if (b.disabled) return;
+    b.disabled = true;
+    status.textContent = "준비하고 있어요";
+    onContinue();
+  });
   wrap.appendChild(b);
+  wrap.appendChild(status);
   root.appendChild(wrap);
 }
 

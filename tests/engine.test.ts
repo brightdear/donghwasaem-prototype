@@ -563,3 +563,101 @@ describe("화면 진행 규칙", () => {
     expect(n.state).toBe(r.state);
   });
 });
+
+describe("대체된 발화의 ttsDone(실제 tts처럼 cancel·speak가 이전 발화를 동기로 cancelled 처리)", () => {
+  /** 가짜 TTS: speak는 끝나지 않고 대기, cancelSpeech·새 speak는 진행 중 발화에 done(cancelled)을 즉시 낸다 */
+  function realisticTts(r0: ReturnType<typeof init>) {
+    let t = 0;
+    let state = r0.state;
+    let active: string | null = null;
+    const logs: EngineLogEvent[] = [];
+    const absorb = (fx: Effect[]) => {
+      const q = [...fx];
+      while (q.length) {
+        const e = q.shift()!;
+        if (e.type === "log") logs.push(e.event);
+        const closePrev = () => {
+          if (active === null) return;
+          const id = active;
+          active = null;
+          const d = step(state, { type: "ttsDone", utteranceId: id, outcome: "cancelled", at: (t += 1) });
+          state = d.state;
+          q.unshift(...d.effects);
+        };
+        if (e.type === "cancelSpeech") closePrev();
+        if (e.type === "speak") {
+          closePrev();
+          active = e.utteranceId;
+        }
+      }
+    };
+    absorb(r0.effects);
+    return {
+      get state() {
+        return state;
+      },
+      get active() {
+        return active;
+      },
+      logs,
+      act(a: Omit<Action, "at"> & Record<string, unknown>) {
+        const r = step(state, { ...a, at: (t += 10) } as Action);
+        state = r.state;
+        absorb(r.effects);
+      },
+      end() {
+        const id = active!;
+        active = null;
+        const r = step(state, { type: "ttsDone", utteranceId: id, outcome: "ended", at: (t += 10) });
+        state = r.state;
+        absorb(r.effects);
+      },
+    };
+  }
+
+  it("본문 화면에서 replay → 이전 utterance cancelled 도착 → nextVisible false 유지 → 새 utterance ended → true", () => {
+    const x = realisticTts(init(story, OFF, AUTO, 0));
+    const first = x.active!;
+    expect(currentView(x.state)).toMatchObject({ screen: "passage", nextVisible: false });
+    x.act({ type: "replay" });
+    const second = x.active!;
+    expect(second).not.toBe(first);
+    // 이전 발화의 cancelled는 로그(tts_end)만 남는다
+    expect(x.logs.some((e) => e.event_type === "tts_end" && (e.detail as { utterance_id: string }).utterance_id === first)).toBe(true);
+    expect(currentView(x.state)).toMatchObject({ nextVisible: false });
+    x.act({ type: "next" });
+    expect(currentView(x.state)).toMatchObject({ screen: "passage", nextVisible: false });
+    x.end();
+    expect(currentView(x.state)).toMatchObject({ screen: "passage", nextVisible: true });
+  });
+
+  it("이해 질문 피드백 재낭독도 같다", () => {
+    const x = realisticTts(init(story, OFF, AUTO, 0));
+    for (let g = 0; currentView(x.state).screen !== "comprehension" && g < 100; g++) {
+      x.end();
+      x.act({ type: "next" });
+    }
+    expect(currentView(x.state)).toMatchObject({ screen: "comprehension", feedback: null });
+    x.act({ type: "answerQuestion", optionId: story.comprehension[0]!.answer });
+    expect(currentView(x.state)).toMatchObject({ nextVisible: false });
+    const fb1 = x.active!;
+    x.act({ type: "replay" });
+    expect(x.active).not.toBe(fb1);
+    expect(currentView(x.state)).toMatchObject({ nextVisible: false });
+    x.end();
+    expect(currentView(x.state)).toMatchObject({ nextVisible: true });
+  });
+
+  it("선택 화면: 대체된 prompt의 늦은 ended는 반응시간 기준점을 세우지 않는다", () => {
+    let r = init(story, C("converge", false), AUTO, 0);
+    const sp = (fx: Effect[]) => fx.filter((e): e is Extract<Effect, { type: "speak" }> => e.type === "speak");
+    r = step(r.state, { type: "ttsDone", utteranceId: sp(r.effects)[0]!.utteranceId, outcome: "ended", at: 100 });
+    r = step(r.state, { type: "next", at: 200 });
+    const promptId = sp(r.effects)[0]!.utteranceId;
+    r = step(r.state, { type: "listen", optionId: "c1b", at: 300 });
+    r = step(r.state, { type: "ttsDone", utteranceId: promptId, outcome: "ended", at: 400 }); // 대체된 발화
+    r = step(r.state, { type: "confirm", optionId: "c1b", at: 1200 });
+    const e = r.effects.find((x) => x.type === "log" && x.event.event_type === "choice_confirm") as Extract<Effect, { type: "log" }>;
+    expect(e.event).toMatchObject({ rt_ms: 1000, rt_basis: "shown" });
+  });
+});

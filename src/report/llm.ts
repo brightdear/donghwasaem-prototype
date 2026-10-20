@@ -88,6 +88,8 @@ export async function generateReport(
       deps.client ??
       new Anthropic({
         apiKey: apiKey as string,
+        // 정적 호스팅·서버 없음: 실험자 본인 키를 쓰고(한도 낮은 전용 키 권장),
+        // 키는 해당 기기 localStorage에만 보관한다.
         dangerouslyAllowBrowser: true,
         timeout: LLM_TIMEOUT_MS,
         maxRetries: 0,

@@ -27,6 +27,17 @@ describe("csv", () => {
     expect(toCsv([r3])).toContain('"x,y"');
   });
 
+  it("수식 주입 중화, 숫자 열 음수는 예외", () => {
+    const r = rec(makeMeta(), [{ event_type: "session_start", at: 0, detail: "=SUM(1)" as unknown as Record<string, unknown> }]);
+    const r2 = rec(makeMeta(), [{ event_type: "tts_error", at: 0, node_id: "@x" }]);
+    r2.events[0]!.t_ms = -5;
+    const out = toCsv([r, r2]);
+    expect(out).toContain("'=SUM(1)");
+    expect(out).toContain("'@x");
+    expect(out).toContain(",-5,");
+    expect(out).not.toContain("'-5");
+  });
+
   it("여러 세션 병합", () => {
     const a = rec(makeMeta("P01", 1), [
       { event_type: "session_start", at: 0 },

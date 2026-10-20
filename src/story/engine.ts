@@ -98,6 +98,8 @@ export interface EngineState {
   screenSeq: number;
   uttSeq: number;
   live: Record<string, LiveUtterance>;
+  /** 마지막으로 발급한 utteranceId. 화면 상태(nextVisible·반응시간 기준점)는 이 발화의 ttsDone만 바꾼다 */
+  lastUtt: string | null;
   mismatchCount: number;
 }
 
@@ -175,6 +177,7 @@ function speak(ctx: Ctx, kind: SpeakKind, role: Role, text: string, at: number):
   s.uttSeq += 1;
   const utteranceId = `${nodeId}:${kind}:${s.uttSeq}`;
   s.live[utteranceId] = { kind, role, screenSeq: cur.seq, screen: screenOf(cur), nodeId, cpId: cpIdOf(cur) };
+  s.lastUtt = utteranceId;
   log(ctx, { event_type: "tts_start", at, ...ctxCols(cur, s), detail: { utterance_id: utteranceId, kind } });
   ctx.fx.push({ type: "speak", utteranceId, kind, text });
 }
@@ -449,6 +452,7 @@ export function init(story: Story, conditions: Conditions, settings: EngineSetti
     screenSeq: 0,
     uttSeq: 0,
     live: {},
+    lastUtt: null,
     mismatchCount: 0,
   };
   const ctx: Ctx = { s, fx: [] };
@@ -480,6 +484,8 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
       detail: { utterance_id: action.utteranceId, kind: u.kind, outcome: action.outcome },
     });
     if (u.screenSeq !== cur.seq) return { state: s, effects: ctx.fx };
+    // 다시 듣기·보기 낭독 등으로 대체된 이전 발화의 done(cancelled 등)은 로그만 남긴다
+    if (action.utteranceId !== s.lastUtt) return { state: s, effects: ctx.fx };
     if (cur.t === "body" && u.role === "body" && !cur.nextVisible) {
       cur.nextVisible = true;
       render(ctx);
