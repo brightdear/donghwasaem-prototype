@@ -93,7 +93,7 @@ function motionsAt(story: Story, sceneId: string, page: number): ResolvedOverlay
       y: m.y,
       size: m.size,
       animate: true,
-      key: `${sceneId}|${page}|${m.overlay}|${m.motion}`,
+      key: `${sceneId}|${page}|${m.overlay}|${m.motion}|${m.x},${m.y}`,
     }));
 }
 

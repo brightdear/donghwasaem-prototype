@@ -417,7 +417,9 @@
     "motions": [
       { "scene": "p1", "page": 8, "overlay": "swallow.webp", "motion": "fall", "x": 0.55, "y": 0.55, "size": 0.1 },
       { "scene": "c1.c1a.consequence", "page": 10, "overlay": "seed.webp", "motion": "fall", "x": 0.45, "y": 0.78, "size": 0.04 },
-      { "scene": "c2.c2a.consequence", "page": 5, "overlay": "gourd.webp", "motion": "grow", "x": 0.44, "y": 0.18, "size": 0.13 },
+      { "scene": "c2.c2a.consequence", "page": 5, "overlay": "gourd.webp", "motion": "grow", "x": 0.41, "y": 0.08, "size": 0.12 },
+      { "scene": "c2.c2a.consequence", "page": 5, "overlay": "gourd.webp", "motion": "grow", "x": 0.62, "y": 0.1, "size": 0.12 },
+      { "scene": "c2.c2a.consequence", "page": 5, "overlay": "gourd.webp", "motion": "grow", "x": 0.82, "y": 0.1, "size": 0.12 },
       { "scene": "p3", "page": 1, "overlay": "snowflake.webp", "motion": "drift_down", "x": 0.5, "y": 0.08, "size": 0.03 },
       { "scene": "p4", "page": 3, "overlay": "swallow.webp", "motion": "walk_in", "x": 0.6, "y": 0.3, "size": 0.1 }
     ]
