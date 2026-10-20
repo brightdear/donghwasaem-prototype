@@ -1,0 +1,11 @@
+/* 자리표시자. 단계 2에서 작성: 버튼 min-height 64px, touch-action: manipulation, 이미지·이모지·애니메이션 없음 */
+:root {
+  font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  font-size: 20px;
+  color: #1a1a1a;
+  background: #fff;
+}
+body {
+  margin: 0;
+  padding: 16px;
+}
