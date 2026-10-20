@@ -20,8 +20,9 @@ npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ �
 - 배포는 `.github/workflows/pages.yml` 하나로 한다. 모든 push·PR에서 `test` 잡(`npm ci` → `npm test`)이 돌고, `main` 에서만 테스트 통과 뒤 `deploy` 잡(`npm run build` → Pages 배포)이 돈다.
 - **JSON을 고친 뒤에는 Actions가 초록인지 확인한다. 빨강이면 배포되지 않고 이전 버전이 그대로 떠 있다.**
 - **로그와 API 키는 origin(Pages 주소)에 묶인 localStorage 에 저장된다.** 로컬 IP, 다른 도메인 등 다른 주소로 열면 이전 로그와 키가 보이지 않는다. 기기 점검·리허설·가정 방문 모두 같은 Pages 주소만 쓴다.
-- 같은 GitHub 계정의 다른 Pages 사이트는 origin(`<계정>.github.io`)을 공유한다. 이 계정에는 스크립트가 있는 다른 Pages 사이트를 만들지 않는다(저장소: 개인 계정 공개 저장소 `donghwasaem-prototype`).
-- 세션이 끝날 때마다 JSON 내보내기, 방문을 마칠 때마다 API 키 삭제.
+- **배포 주소: https://brightdear.github.io/donghwasaem-prototype/** (저장소 `brightdear/donghwasaem-prototype`, 공개).
+- 같은 GitHub 계정의 다른 Pages 사이트는 origin(`brightdear.github.io`)을 공유한다. 이 계정에는 가치기상 앱 공개 페이지(`brightdear.github.io`, 처리방침·삭제 요청·초대 링크, 외부 스크립트 없음)가 이미 있다. 그 페이지에 외부 스크립트·광고·분석 코드를 넣지 않는다. 넣어야 한다면 이 시제품을 새 GitHub 조직으로 옮긴다(주소가 바뀌면 기기 로그는 새로 시작).
+- API 키는 **실험 전용·월 한도 낮은 키**를 따로 만들어 쓰고, 세션이 끝날 때마다 JSON 내보내기, 방문을 마칠 때마다 실험자 화면에서 키 삭제.
 
 ## 시나리오 JSON 편집
 
