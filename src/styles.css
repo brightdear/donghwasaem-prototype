@@ -39,11 +39,11 @@ body {
 .handoff-text { font-size: 2rem; line-height: 1.6; text-align: center; margin: 48px 0; }
 .child .prompt { font-weight: bold; }
 
-/* 장면 그림: 4:3, 최대 높이 뷰포트의 45%. 그림이 없으면 .scene 자체가 없고 글만 보인다 */
+/* 장면 그림: 3:2(ChatGPT 이미지 1536×1024 기준), 최대 높이 뷰포트의 45%. 그림이 없으면 .scene 자체가 없고 글만 보인다 */
 .scene {
   position: relative;
   width: min(100%, calc(45vh * 4 / 3));
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 2;
   max-height: 45vh;
   margin: 0 auto 16px;
   overflow: hidden;
