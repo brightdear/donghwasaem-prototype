@@ -38,7 +38,10 @@ interface BodyCur {
   screen: BodyScreen;
   nodeId: string;
   cpId: string | null;
+  /** 문단 1개 = 화면 1페이지 */
   paragraphs: string[];
+  /** 현재 페이지(0부터) */
+  page: number;
   attempt: number | null;
   nextVisible: boolean;
   replayCount: number;
@@ -206,6 +209,7 @@ function enterBody(ctx: Ctx, p: Extract<Pending, { t: "body" }>, at: number): vo
     nodeId: p.nodeId,
     cpId: p.cpId,
     paragraphs: p.paragraphs,
+    page: 0,
     attempt: p.attempt,
     nextVisible: s.settings.manualReading,
     replayCount: 0,
@@ -224,7 +228,16 @@ function enterBody(ctx: Ctx, p: Extract<Pending, { t: "body" }>, at: number): vo
       attempt: p.attempt ?? 3,
     });
   }
-  speak(ctx, "passage", "body", p.paragraphs.join(" "), at);
+  speak(ctx, "passage", "body", p.paragraphs[0] ?? "", at);
+  render(ctx);
+}
+
+/** 같은 노드의 다음 페이지: screen_enter 없이 그 페이지만 낭독 */
+function nextPage(ctx: Ctx, cur: BodyCur, at: number): void {
+  cancelLive(ctx);
+  cur.page += 1;
+  cur.nextVisible = ctx.s.settings.manualReading;
+  speak(ctx, "passage", "body", cur.paragraphs[cur.page] ?? "", at);
   render(ctx);
 }
 
@@ -352,7 +365,8 @@ function confirmChoice(ctx: Ctx, cur: ChoiceCur, optionId: string, at: number): 
     const m = o.mismatch!.rewind;
     q.push(body("consequence", "rewind.consequence", m.consequence));
     if (a <= 1) {
-      q.push(body("contrast", "rewind.contrast", [m.contrast, STRINGS.chooseAgain]));
+      // 재선택 안내는 마지막 페이지에 붙인다(contrast는 문자열 1개 = 1페이지)
+      q.push(body("contrast", "rewind.contrast", [`${m.contrast} ${STRINGS.chooseAgain}`]));
       q.push({ t: "choice", cpId: cp.id, attempt: a + 1 });
     } else {
       q.push(body("contrast", "rewind.contrastFinal", [m.contrastFinal]));
@@ -504,8 +518,10 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
     case "next": {
       if (cur.t === "body") {
         if (!cur.nextVisible) return unchanged;
-        log(ctx, { event_type: "next_click", at, ...ctxCols(cur, s) });
-        advance(ctx, at);
+        const pageCount = cur.paragraphs.length;
+        log(ctx, { event_type: "next_click", at, ...ctxCols(cur, s), detail: { page: cur.page + 1, page_count: pageCount } });
+        if (cur.page + 1 < pageCount) nextPage(ctx, cur, at);
+        else advance(ctx, at);
         break;
       }
       if (cur.t === "comprehension") {
@@ -520,7 +536,7 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
         cur.replayCount += 1;
         log(ctx, { event_type: "replay", at, ...ctxCols(cur, s), replay_count: cur.replayCount });
         cancelLive(ctx);
-        speak(ctx, "passage", "body", cur.paragraphs.join(" "), at);
+        speak(ctx, "passage", "body", cur.paragraphs[cur.page] ?? "", at);
         break;
       }
       cur.replayCount += 1;
@@ -583,7 +599,9 @@ export function currentView(state: EngineState): View {
         screen: cur.screen,
         nodeId: cur.nodeId,
         choicePointId: cur.cpId,
-        paragraphs: cur.paragraphs,
+        paragraphs: [cur.paragraphs[cur.page] ?? ""],
+        page: cur.page + 1,
+        pageCount: cur.paragraphs.length,
         nextVisible: cur.nextVisible,
       };
     case "choice": {

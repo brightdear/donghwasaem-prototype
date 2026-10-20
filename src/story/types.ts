@@ -149,7 +149,7 @@ export type Screen =
   | "parent_handoff"
   | "report";
 
-/** 본문 화면: 자동 낭독 → ttsDone 뒤 '다음' 표시 → next로 진행 */
+/** 본문 화면: 페이지(문단 1개)마다 자동 낭독 → ttsDone 뒤 '다음' 표시 → next로 다음 페이지, 마지막 페이지면 다음 노드 */
 export type BodyScreen = "passage" | "echo" | "consequence" | "contrast" | "bridge" | "ending";
 
 export type SpeakKind = "passage" | "prompt" | "option";
@@ -176,8 +176,11 @@ export interface BodyView {
   screen: BodyScreen;
   nodeId: string; // 하위 노드 id 규칙
   choicePointId: string | null;
+  /** 현재 페이지의 문단 1개만 담는다(길이 1). 문단 1개 = 화면 1페이지 = 1~2문장 */
   paragraphs: string[];
-  nextVisible: boolean; // ttsDone 뒤 true (manualReading이면 진입 즉시 true)
+  page: number; // 1부터. 아이 화면에는 표시하지 않음
+  pageCount: number;
+  nextVisible: boolean; // 페이지 낭독 ttsDone 뒤 true (manualReading이면 페이지 진입 즉시 true)
 }
 export interface ChoiceView {
   screen: "choice";

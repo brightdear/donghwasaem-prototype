@@ -97,8 +97,8 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
     return;
   }
 
-  // BodyView
-  for (const p of view.paragraphs) wrap.appendChild(el("p", "child-text", p));
+  // BodyView: 한 페이지(문단 1개)만. 페이지 번호는 아이 화면에 표시하지 않는다
+  for (const p of view.paragraphs) wrap.appendChild(el("p", "child-text child-page", p));
   const actions = el("div", "actions");
   if (view.nextVisible) {
     actions.appendChild(button("btn btn-primary", STRINGS.next, () => dispatch({ type: "next" })));

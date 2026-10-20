@@ -15,12 +15,23 @@ const logOf = (r: R, type: string): EngineLogEvent | undefined =>
   (r.effects.find((e) => e.type === "log" && e.event.event_type === type) as Extract<Effect, { type: "log" }> | undefined)?.event;
 const done = (r: R, id: string, outcome: TtsOutcome, at: number) => step(r.state, { type: "ttsDone", utteranceId: id, outcome, at });
 
-/** p1 낭독 끝 → next(at=1000)로 c1 선택 화면 진입. promptId 반환 */
+const isBody = (r: R) => "pageCount" in currentView(r.state);
+/** 본문 페이지마다 낭독 끝 → next를 같은 시각(at)으로 찍어 본문 화면을 벗어난다 */
+function passBody(r: R, at: number): R {
+  for (let g = 0; isBody(r) && g < 50; g++) {
+    for (const s of speaks(r)) r = done(r, s.utteranceId, "ended", at);
+    r = step(r.state, { type: "next", at });
+  }
+  return r;
+}
+
+/** p1 낭독 끝 → next(at=1000)로 페이지를 넘겨 c1 선택 화면 진입. promptId 반환 */
 function choiceScreen(): { r: R; promptId: string; p1Id: string } {
   let r = init(story, COND, AUTO, 0);
   const p1Id = speaks(r)[0]!.utteranceId;
   r = done(r, p1Id, "ended", 500);
   r = step(r.state, { type: "next", at: 1000 });
+  r = passBody(r, 1000);
   return { r, promptId: speaks(r)[0]!.utteranceId, p1Id };
 }
 const confirm = (r: R, at: number) => logOf(step(r.state, { type: "confirm", optionId: "c1a", at }), "choice_confirm")!;
@@ -102,6 +113,11 @@ describe("반응시간 — 리듀서 경유(choice)", () => {
 
   it("다른 화면의 utteranceId는 무시", () => {
     let r = init(story, COND, AUTO, 0);
+    // p1 마지막 페이지까지 넘긴다
+    for (let v = currentView(r.state); "pageCount" in v && v.page < v.pageCount; v = currentView(r.state)) {
+      r = done(r, speaks(r)[0]!.utteranceId, "ended", 200);
+      r = step(r.state, { type: "next", at: 200 });
+    }
     const p1Id = speaks(r)[0]!.utteranceId;
     r = done(r, p1Id, "ended", 300);
     r = step(r.state, { type: "replay", at: 400 }); // p1 다시 듣기(아직 안 끝남)

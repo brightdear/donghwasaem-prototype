@@ -35,6 +35,7 @@ body {
 /* 아이 화면 */
 .child { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .child-text { font-size: 1.4rem; line-height: 1.6; margin: 0 0 16px; }
+.child-page { font-size: 1.8rem; line-height: 1.7; }
 .handoff-text { font-size: 2rem; line-height: 1.6; text-align: center; margin: 48px 0; }
 .child .prompt { font-weight: bold; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }

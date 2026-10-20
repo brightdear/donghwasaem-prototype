@@ -133,7 +133,8 @@ describe("runner", () => {
     expect(ev.at(-1)).toMatchObject({ event_type: "page_hidden", seq: ev.length });
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     store.clearSessions(); // 이후 appendEvent는 missing
-    runner.dispatch({ type: "next" });
+    runner.dispatch({ type: "next" }); // p1 1페이지 → 2페이지
+    runner.dispatch({ type: "next" }); // p1 마지막 페이지 → 다음 화면
     runner.dispatch({ type: "replay" });
     expect(warn).toHaveBeenCalledTimes(1);
     expect(currentView(runner.getState()).screen).not.toBe("passage");

@@ -6,3 +6,4 @@ docs/transcripts/
 .env.*
 .DS_Store
 .omc/
+.gstack/

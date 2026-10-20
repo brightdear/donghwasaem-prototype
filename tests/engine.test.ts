@@ -325,10 +325,10 @@ describe("converge·altEnding 낭독 내용", () => {
     it(`${kind}: 다른 선택이면 원작 consequence 미낭독, bridge 낭독`, () => {
       const r = run(C(kind, true), ["c1b", "c2a", "c3a"]);
       const texts = r.speaks.map((s) => s.text);
-      expect(texts).not.toContain(origC1);
+      expect(texts.join(" ")).not.toContain(origC1);
       const m = story.choicePoints[0]!.options[1]!.mismatch![kind];
-      expect(texts).toContain(m.bridge.join(" "));
-      expect(texts).toContain(m.consequence.join(" "));
+      // 문단 1개 = 페이지 1개 = 낭독 1개
+      for (const p of [...m.bridge, ...m.consequence]) expect(texts).toContain(p);
     });
   }
 });
@@ -336,9 +336,10 @@ describe("converge·altEnding 낭독 내용", () => {
 describe("rewind [다른, 다른, 강제]", () => {
   const r = run(C("rewind", true), ["c1b", "c1b", "c2a", "c3a"]);
   const m = story.choicePoints[0]!.options[1]!.mismatch!.rewind;
+  /** 그 노드의 페이지 낭독을 이어 붙인 문자열 */
   const textOf = (node: string) => {
-    const i = r.speaks.findIndex((s) => s.utteranceId.startsWith(`${node}:`));
-    return r.speaks[i]?.text;
+    const xs = r.speaks.filter((s) => s.utteranceId.startsWith(`${node}:`));
+    return xs.length ? xs.map((s) => s.text).join(" ") : undefined;
   };
   it("1회째 contrast 끝에 재선택 안내", () => {
     const t = textOf("c1.c1b.rewind.contrast#1")!;
@@ -375,12 +376,20 @@ describe("rewind [다른, 다른, 강제]", () => {
   });
 });
 
-/** 첫 본문(p1)을 끝내고 c1 선택 화면에 들어간 상태 */
+type SR = ReturnType<typeof init>;
+const isBody = (r: SR) => "pageCount" in currentView(r.state);
+/** 본문 화면의 모든 페이지를 낭독 끝 → next로 넘긴다 */
+function passBody(r: SR, at: number): SR {
+  for (let g = 0; isBody(r) && g < 50; g++) {
+    for (const e of r.effects) if (e.type === "speak") r = step(r.state, { type: "ttsDone", utteranceId: e.utteranceId, outcome: "ended", at: at - 50 });
+    r = step(r.state, { type: "next", at });
+  }
+  return r;
+}
+
+/** 첫 본문(p1)의 모든 페이지를 끝내고 c1 선택 화면에 들어간 상태 */
 function toChoice(cond: Conditions, settings: EngineSettings = AUTO) {
-  let r = init(story, cond, settings, 0);
-  const sp = r.effects.find((e) => e.type === "speak") as Extract<Effect, { type: "speak" }> | undefined;
-  if (sp) r = step(r.state, { type: "ttsDone", utteranceId: sp.utteranceId, outcome: "ended", at: 50 });
-  return step(r.state, { type: "next", at: 100 });
+  return passBody(init(story, cond, settings, 0), 100);
 }
 
 describe("rewind 재제시", () => {
@@ -422,7 +431,8 @@ describe("화면 진행 규칙", () => {
     const r1 = step(r0.state, { type: "ttsDone", utteranceId: sp.utteranceId, outcome: "error", at: 20 });
     expect(currentView(r1.state)).toMatchObject({ nextVisible: true });
     const r2 = step(r1.state, { type: "next", at: 30 });
-    expect(currentView(r2.state)).toMatchObject({ screen: "choice", nodeId: "c1" });
+    expect(currentView(r2.state)).toMatchObject({ screen: "passage", nodeId: "p1", page: 2, nextVisible: false });
+    expect(currentView(passBody(r2, 40).state)).toMatchObject({ screen: "choice", nodeId: "c1" });
   });
 
   it("실험자 낭독 모드: speak 없이 진입 즉시 '다음' 표시·진행", () => {
@@ -431,7 +441,10 @@ describe("화면 진행 규칙", () => {
     expect(r0.effects.some((e) => e.type === "speak")).toBe(false);
     expect(currentView(r0.state)).toMatchObject({ nextVisible: true });
     const r1 = step(r0.state, { type: "next", at: 5 });
-    expect(currentView(r1.state)).toMatchObject({ screen: "echo", nodeId: "c1.c1a.offNarration", nextVisible: true });
+    expect(r1.effects.some((e) => e.type === "speak")).toBe(false);
+    expect(currentView(r1.state)).toMatchObject({ screen: "passage", nodeId: "p1", page: 2, nextVisible: true });
+    const r2 = step(r1.state, { type: "next", at: 6 });
+    expect(currentView(r2.state)).toMatchObject({ screen: "echo", nodeId: "c1.c1a.offNarration", nextVisible: true });
     const full = run(C("rewind", true), ["c1b", "c1b", "c2a", "c3a"], s);
     expect(full.speaks).toHaveLength(0);
     expect(isFinished(full.state)).toBe(true);
@@ -483,7 +496,11 @@ describe("화면 진행 규칙", () => {
       const bodyScreens = ["passage", "echo", "consequence", "contrast", "bridge", "ending"];
       const enters = r.logs.filter((e) => e.event_type === "screen_enter" && bodyScreens.includes(e.screen!));
       const clicks = r.logs.filter((e) => e.event_type === "next_click");
-      expect(clicks.map((e) => e.node_id)).toEqual(enters.map((e) => e.node_id));
+      // 페이지마다 next_click, 노드 전환은 마지막 페이지의 next_click
+      const page = (e: EngineLogEvent) => e.detail as { page: number; page_count: number };
+      const last = clicks.filter((e) => page(e).page === page(e).page_count);
+      expect(last.map((e) => e.node_id)).toEqual(enters.map((e) => e.node_id));
+      expect(clicks.every((e) => page(e).page >= 1 && page(e).page <= page(e).page_count)).toBe(true);
       for (const e of clicks) {
         if (/^c\d\./.test(e.node_id!)) expect(e.choice_point_id).toBe(e.node_id!.split(".")[0]);
         else expect(e.choice_point_id).toBeUndefined();
@@ -651,13 +668,111 @@ describe("대체된 발화의 ttsDone(실제 tts처럼 cancel·speak가 이전 �
   it("선택 화면: 대체된 prompt의 늦은 ended는 반응시간 기준점을 세우지 않는다", () => {
     let r = init(story, C("converge", false), AUTO, 0);
     const sp = (fx: Effect[]) => fx.filter((e): e is Extract<Effect, { type: "speak" }> => e.type === "speak");
-    r = step(r.state, { type: "ttsDone", utteranceId: sp(r.effects)[0]!.utteranceId, outcome: "ended", at: 100 });
-    r = step(r.state, { type: "next", at: 200 });
+    r = passBody(r, 200);
     const promptId = sp(r.effects)[0]!.utteranceId;
     r = step(r.state, { type: "listen", optionId: "c1b", at: 300 });
     r = step(r.state, { type: "ttsDone", utteranceId: promptId, outcome: "ended", at: 400 }); // 대체된 발화
     r = step(r.state, { type: "confirm", optionId: "c1b", at: 1200 });
     const e = r.effects.find((x) => x.type === "log" && x.event.event_type === "choice_confirm") as Extract<Effect, { type: "log" }>;
     expect(e.event).toMatchObject({ rt_ms: 1000, rt_basis: "shown" });
+  });
+});
+
+describe("페이지 단위 본문(문단 1개 = 화면 1페이지)", () => {
+  const PAGES = ["첫째 페이지예요.", "둘째 페이지예요. 짧은 문장이에요.", "셋째 페이지예요."];
+  const story3 = JSON.parse(JSON.stringify(story)) as Story;
+  (story3.spine[0] as Extract<Story["spine"][number], { type: "passage" }>).paragraphs = PAGES;
+  type Log = Extract<Effect, { type: "log" }>;
+  const speaksOf = (fx: Effect[]) => fx.filter((e): e is Extract<Effect, { type: "speak" }> => e.type === "speak");
+  const logsOf = (fx: Effect[], t: string) => fx.filter((e): e is Log => e.type === "log" && e.event.event_type === t).map((e) => e.event);
+
+  it("3문단 노드는 next 3번(마지막이 노드 전환), 페이지마다 speak 1개·tts_start/tts_end, next_click detail.page=1..3", () => {
+    let r = init(story3, OFF, AUTO, 0);
+    expect(logsOf(r.effects, "screen_enter").map((e) => e.node_id)).toEqual(["p1"]);
+    const clicks: EngineLogEvent[] = [];
+    for (let i = 0; i < 3; i++) {
+      const sp = speaksOf(r.effects);
+      expect(sp.map((s) => [s.kind, s.text])).toEqual([["passage", PAGES[i]]]);
+      expect(sp[0]!.utteranceId).toMatch(/^p1:passage:\d+$/);
+      expect(logsOf(r.effects, "tts_start")).toHaveLength(1);
+      expect(currentView(r.state)).toEqual({
+        screen: "passage",
+        nodeId: "p1",
+        choicePointId: null,
+        paragraphs: [PAGES[i]],
+        page: i + 1,
+        pageCount: 3,
+        nextVisible: false,
+      });
+      expect(step(r.state, { type: "next", at: i * 100 + 10 }).effects).toEqual([]); // 낭독 전 next 무시
+      r = step(r.state, { type: "ttsDone", utteranceId: sp[0]!.utteranceId, outcome: "ended", at: i * 100 + 20 });
+      expect(logsOf(r.effects, "tts_end")).toHaveLength(1);
+      expect(currentView(r.state)).toMatchObject({ page: i + 1, nextVisible: true });
+      r = step(r.state, { type: "next", at: i * 100 + 30 });
+      clicks.push(...logsOf(r.effects, "next_click"));
+      if (i < 2) {
+        expect(logsOf(r.effects, "screen_enter")).toEqual([]); // 페이지 넘김은 화면 진입이 아님
+        expect(currentView(r.state)).toMatchObject({ screen: "passage", nodeId: "p1", page: i + 2 });
+      }
+    }
+    expect(clicks.map((e) => [e.node_id, e.detail])).toEqual([
+      ["p1", { page: 1, page_count: 3 }],
+      ["p1", { page: 2, page_count: 3 }],
+      ["p1", { page: 3, page_count: 3 }],
+    ]);
+    expect(logsOf(r.effects, "screen_enter").map((e) => e.node_id)).toEqual(["c1.c1a.offNarration"]);
+    expect(currentView(r.state)).toMatchObject({ screen: "echo", page: 1, pageCount: 1 });
+  });
+
+  it("중간 페이지 다시 듣기는 그 페이지만 재낭독, 대체된 발화의 done은 '다음'을 띄우지 않는다", () => {
+    let r = init(story3, OFF, AUTO, 0);
+    r = step(r.state, { type: "ttsDone", utteranceId: speaksOf(r.effects)[0]!.utteranceId, outcome: "ended", at: 10 });
+    r = step(r.state, { type: "next", at: 20 });
+    const u1 = speaksOf(r.effects)[0]!.utteranceId;
+    r = step(r.state, { type: "replay", at: 30 });
+    expect(r.effects.some((e) => e.type === "cancelSpeech")).toBe(true);
+    const sp = speaksOf(r.effects);
+    expect(sp.map((s) => s.text)).toEqual([PAGES[1]]);
+    expect(logsOf(r.effects, "replay")[0]).toMatchObject({ node_id: "p1", replay_count: 1 });
+    r = step(r.state, { type: "ttsDone", utteranceId: u1, outcome: "cancelled", at: 31 });
+    expect(currentView(r.state)).toMatchObject({ page: 2, nextVisible: false });
+    r = step(r.state, { type: "ttsDone", utteranceId: sp[0]!.utteranceId, outcome: "ended", at: 40 });
+    expect(currentView(r.state)).toMatchObject({ page: 2, nextVisible: true });
+    // '다음'이 보인 뒤 다시 듣기: 그 페이지만 다시 읽고 '다음'은 유지
+    r = step(r.state, { type: "replay", at: 50 });
+    expect(speaksOf(r.effects).map((s) => s.text)).toEqual([PAGES[1]]);
+    expect(currentView(r.state)).toMatchObject({ page: 2, nextVisible: true });
+    // 재낭독 중 next → 낭독 취소 후 3페이지
+    r = step(r.state, { type: "next", at: 60 });
+    expect(r.effects.some((e) => e.type === "cancelSpeech")).toBe(true);
+    expect(currentView(r.state)).toMatchObject({ page: 3, nextVisible: false, paragraphs: [PAGES[2]] });
+  });
+
+  it("실험자 낭독 모드: 페이지마다 speak 없이 즉시 '다음'", () => {
+    let r = init(story3, OFF, { manualReading: true, confirmMode: "double" }, 0);
+    for (let i = 0; i < 3; i++) {
+      expect(speaksOf(r.effects)).toEqual([]);
+      expect(currentView(r.state)).toMatchObject({ screen: "passage", page: i + 1, pageCount: 3, nextVisible: true });
+      r = step(r.state, { type: "next", at: i + 1 });
+      expect(logsOf(r.effects, "next_click")[0]!.detail).toEqual({ page: i + 1, page_count: 3 });
+    }
+    expect(currentView(r.state)).toMatchObject({ screen: "echo", nextVisible: true });
+  });
+
+  it("rewind 1회째 contrast는 1페이지이고 재선택 안내가 그 페이지 끝에 붙는다", () => {
+    let r = toChoice(C("rewind", false));
+    r = step(r.state, { type: "confirm", optionId: "c1b", at: 200 });
+    let t = 300;
+    for (let g = 0; currentView(r.state).screen !== "contrast" && g < 20; g++) {
+      for (const sp of speaksOf(r.effects)) r = step(r.state, { type: "ttsDone", utteranceId: sp.utteranceId, outcome: "ended", at: (t += 10) });
+      r = step(r.state, { type: "next", at: (t += 10) });
+    }
+    const m = story.choicePoints[0]!.options[1]!.mismatch!.rewind;
+    expect(currentView(r.state)).toMatchObject({
+      screen: "contrast",
+      page: 1,
+      pageCount: 1,
+      paragraphs: [`${m.contrast} ${STRINGS.chooseAgain}`],
+    });
   });
 });

@@ -36,6 +36,7 @@ npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ �
   - R5 `refersTo` 는 척추 `passage` id만, `answerFact`(배열이면 각 원소)는 참조한 passage 안에 문자열로 존재
   - R6 `endings.original`·`endings.alt` 둘 다 존재, `parentPrompts` 2개 이상
   - R7 모든 텍스트에 이모지·금지어 없음
+- 페이지 규칙: `paragraphs`·`consequence`·`bridge` 배열의 원소 1개 = 아이 화면 1페이지 = 1~2문장(70자 이하, 작은따옴표 인용은 한 문장으로 셈). 페이지마다 낭독 후 '다음'. `tests/data.test.ts` 가 검사한다. R5는 passage 문단을 공백 하나로 이어 붙인 문자열에서 검사하므로 정답 사실이 페이지 경계를 넘어도 된다.
 - R8(의미 규칙): 척추 passage 는 직전 선택의 결과를 전제하지 않는다. 결과 의존 내용은 `consequence`/`bridge` 안에만 둔다. 정답 사실은 척추 passage 안에만 둔다.
 
 ## 분석 메모
