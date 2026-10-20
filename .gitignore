@@ -5,3 +5,4 @@ docs/transcripts/
 .env
 .env.*
 .DS_Store
+.omc/
