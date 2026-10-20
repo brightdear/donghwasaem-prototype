@@ -177,3 +177,44 @@ describe("validateStory", () => {
     expect(codes(s)).toContain("R7_FORBIDDEN_WORD");
   });
 });
+
+describe("R9 art 섹션(선택)", () => {
+  it("art가 없어도 통과", () => {
+    const s = clone();
+    delete s.art;
+    expect(codes(s)).toEqual([]);
+  });
+  it("motion 값이 집합 밖 → R9_MOTION", () => {
+    const s = clone();
+    s.art.motions[0].motion = "spin";
+    expect(codes(s)).toContain("R9_MOTION");
+  });
+  it("motion scene이 노드 id가 아님 → R9_SCENE_ID", () => {
+    const s = clone();
+    s.art.motions[0].scene = "p9";
+    expect(codes(s)).toContain("R9_SCENE_ID");
+  });
+  it("scenes 키가 노드 id가 아님 → R9_SCENE_ID", () => {
+    const s = clone();
+    s.art.scenes["c1.c1a.bridge"] = { image: "x.png" };
+    expect(codes(s)).toContain("R9_SCENE_ID");
+  });
+  it("page가 문단 수 초과 → R9_PAGE", () => {
+    const s = clone();
+    s.art.motions[0].page = 3; // p1 문단 2개
+    expect(codes(s)).toContain("R9_PAGE");
+    s.art.motions[0].page = 0;
+    expect(codes(s)).toContain("R9_PAGE");
+  });
+  it("결말·하위 노드 id도 허용", () => {
+    const s = clone();
+    s.art.motions.push({ scene: "end.alt", page: 2, overlay: "leaf.png", motion: "drift_down", x: 0.5, y: 0.1, size: 0.1 });
+    s.art.scenes["c2.c2c.altEnding.bridge"] = { image: "turtle.png" };
+    expect(codes(s)).toEqual([]);
+  });
+  it("x·y·size 범위 밖 → R9_ART", () => {
+    const s = clone();
+    s.art.motions[0].size = 1.5;
+    expect(codes(s)).toContain("R9_ART");
+  });
+});

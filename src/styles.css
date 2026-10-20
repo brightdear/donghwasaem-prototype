@@ -38,6 +38,51 @@ body {
 .child-page { font-size: 1.8rem; line-height: 1.7; }
 .handoff-text { font-size: 2rem; line-height: 1.6; text-align: center; margin: 48px 0; }
 .child .prompt { font-weight: bold; }
+
+/* 장면 그림: 4:3, 최대 높이 뷰포트의 45%. 그림이 없으면 .scene 자체가 없고 글만 보인다 */
+.scene {
+  position: relative;
+  width: min(100%, calc(45vh * 4 / 3));
+  aspect-ratio: 4 / 3;
+  max-height: 45vh;
+  margin: 0 auto 16px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.scene-img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.child.has-scene .child-page { font-size: 1.6rem; }
+/* 오버레이: 이야기와 일치하는 동작 1회 재생 후 끝 상태로 멈춤. 이 밖의 요소에는 애니메이션을 쓰지 않는다 */
+.overlay {
+  position: absolute;
+  height: auto;
+  pointer-events: none;
+  animation-duration: 1.6s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: 1;
+  animation-fill-mode: both;
+}
+.motion-fall { animation-name: fall; }
+.motion-grow { animation-name: grow; transform-origin: 50% 100%; }
+.motion-fly_away { animation-name: fly_away; animation-timing-function: ease-in; }
+.motion-walk_in { animation-name: walk_in; }
+.motion-shiver { animation-name: shiver; animation-duration: 0.4s; animation-iteration-count: 3; animation-timing-function: linear; }
+.motion-drift_down { animation-name: drift_down; animation-duration: 2s; }
+@keyframes fall { from { transform: translateY(-60%); } to { transform: translateY(0); } }
+@keyframes grow { from { transform: scale(0.3); } to { transform: scale(1); } }
+@keyframes fly_away { from { transform: translate(0, 0); } to { transform: translate(120%, -80%); } }
+@keyframes walk_in { from { transform: translateX(-120%); } to { transform: translateX(0); } }
+.motion-walk_in_right { animation-name: walk_in_right; }
+@keyframes walk_in_right { from { transform: translateX(120%); } to { transform: translateX(0); } }
+@keyframes shiver {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+@keyframes drift_down { from { transform: translateY(-20%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  /* 움직임 없이 끝 상태만 보여 준다 */
+  .overlay { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}
 .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
 
 /* 리포트 */

@@ -413,6 +413,15 @@
       }
     }
   ],
+  "art": {
+    "motions": [
+      { "scene": "p1", "page": 8, "overlay": "swallow.png", "motion": "fall", "x": 0.55, "y": 0.55, "size": 0.1 },
+      { "scene": "c1.c1a.consequence", "page": 10, "overlay": "seed.png", "motion": "fall", "x": 0.45, "y": 0.78, "size": 0.04 },
+      { "scene": "c2.c2a.consequence", "page": 5, "overlay": "gourd.png", "motion": "grow", "x": 0.44, "y": 0.18, "size": 0.13 },
+      { "scene": "p3", "page": 1, "overlay": "snowflake.png", "motion": "drift_down", "x": 0.5, "y": 0.08, "size": 0.03 },
+      { "scene": "p4", "page": 3, "overlay": "swallow.png", "motion": "walk_in", "x": 0.6, "y": 0.3, "size": 0.1 }
+    ]
+  },
   "parentPrompts": [
     "흥부가 처마 밑에서 다친 제비를 보았을 때, 흥부 마음은 어땠을까?",
     "눈 오는 밤 놀부 형이 문을 두드렸을 때, 너라면 어떻게 했을 것 같아? 왜 그렇게 생각해?",

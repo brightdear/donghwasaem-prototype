@@ -21,6 +21,7 @@ export interface ExperimenterDeps {
     conditions: Conditions;
     confirmMode: "double" | "single";
     manualReading: boolean;
+    pictures: boolean;
   }): void;
   onExportCsv(): void;
   onExportJson(): void;
@@ -67,6 +68,7 @@ interface FormState {
   askWhy: boolean;
   confirmMode: "double" | "single";
   manualReading: boolean;
+  pictures: boolean;
   keyDraft: string;
 }
 
@@ -85,6 +87,7 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
     askWhy: dc.askWhy === true || dc.askWhy === "na",
     confirmMode: deps.settings.confirmMode,
     manualReading: deps.settings.manualReading,
+    pictures: deps.settings.pictures,
     keyDraft: "",
   };
   kept = state;
@@ -210,6 +213,19 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
   awRow.appendChild(aw);
   awRow.appendChild(el("span", undefined, state.branching ? "이유 묻기" : "이유 묻기 (na)"));
   cond.appendChild(awRow);
+
+  // 그림 토글은 분기 조건과 독립(분기 off여도 켜고 끌 수 있다)
+  const picRow = el("label", "radio-row");
+  const pic = el("input");
+  pic.type = "checkbox";
+  pic.checked = state.pictures;
+  pic.addEventListener("change", () => {
+    state.pictures = pic.checked;
+    patchSettings({ pictures: pic.checked });
+  });
+  picRow.appendChild(pic);
+  picRow.appendChild(el("span", undefined, "그림 보이기"));
+  cond.appendChild(picRow);
   form.appendChild(cond);
 
   const mrRow = el("label", "radio-row");
@@ -323,6 +339,7 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
         conditions,
         confirmMode: advanced ? state.confirmMode : "double",
         manualReading,
+        pictures: state.pictures,
       });
     }),
   );

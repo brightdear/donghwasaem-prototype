@@ -403,6 +403,16 @@
       }
     }
   ],
+  "art": {
+    "motions": [
+      { "scene": "p1", "page": 4, "overlay": "grain.png", "motion": "grow", "x": 0.3, "y": 0.65, "size": 0.12 },
+      { "scene": "c1.c1a.consequence", "page": 2, "overlay": "ant.png", "motion": "walk_in", "x": 0.12, "y": 0.62, "size": 0.1 },
+      { "scene": "p2", "page": 1, "overlay": "leaf.png", "motion": "drift_down", "x": 0.6, "y": 0.15, "size": 0.05 },
+      { "scene": "p3", "page": 1, "overlay": "snowflake.png", "motion": "drift_down", "x": 0.45, "y": 0.05, "size": 0.03 },
+      { "scene": "p3", "page": 3, "overlay": "grasshopper.png", "motion": "walk_in", "x": 0.55, "y": 0.08, "size": 0.2 },
+      { "scene": "p4", "page": 4, "overlay": "grasshopper.png", "motion": "walk_in_right", "x": 0.7, "y": 0.5, "size": 0.2 }
+    ]
+  },
   "parentPrompts": [
     "베짱이가 눈을 맞으며 문을 두드렸을 때, 개미 마음은 어땠을까?",
     "올여름에 베짱이는 무엇을 하면 좋을까? 왜 그렇게 생각해?",

@@ -7,7 +7,7 @@
 ```
 npm install
 npm run dev          # 개발 서버
-npm test             # Vitest (검증기 R1~R7, 엔진, 로그, TTS 등)
+npm test             # Vitest (검증기 R1~R7·R9, 엔진, 로그, TTS 등)
 npm run build        # 타입 검사 + 빌드(dist/)
 npm run preview      # 빌드 결과 미리보기 (개발용. 실험·점검은 Pages 주소만 사용)
 npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ 에 생성 (커밋하지 않음)
@@ -36,8 +36,30 @@ npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ �
   - R5 `refersTo` 는 척추 `passage` id만, `answerFact`(배열이면 각 원소)는 참조한 passage 안에 문자열로 존재
   - R6 `endings.original`·`endings.alt` 둘 다 존재, `parentPrompts` 2개 이상
   - R7 모든 텍스트에 이모지·금지어 없음
+  - R9 (`art` 섹션이 있을 때만) `motion` 값은 `fall`·`grow`·`fly_away`·`walk_in`·`walk_in_right`·`shiver`·`drift_down` 중 하나, `scene`·`scenes` 키는 실제 본문 노드 id, `page` 는 1~그 노드 문단 수, `x`·`y`·`size` 는 0~1
 - 페이지 규칙: `paragraphs`·`consequence`·`bridge` 배열의 원소 1개 = 아이 화면 1페이지 = 1~2문장(70자 이하, 작은따옴표 인용은 한 문장으로 셈). 페이지마다 낭독 후 '다음'. `tests/data.test.ts` 가 검사한다. R5는 passage 문단을 공백 하나로 이어 붙인 문자열에서 검사하므로 정답 사실이 페이지 경계를 넘어도 된다.
 - R8(의미 규칙): 척추 passage 는 직전 선택의 결과를 전제하지 않는다. 결과 의존 내용은 `consequence`/`bridge` 안에만 둔다. 정답 사실은 척추 passage 안에만 둔다.
+
+## 그림 넣는 법
+
+그림은 선택이다. **그림 파일이 없으면 그림 영역이 사라지고 지금처럼 글만 보인다**(레이아웃 깨짐 없음). 실험자 화면 조건 패널의 "그림 보이기"를 끄면 그림·오버레이를 아예 그리지 않는다(분기 토글과 독립, `session_start` 의 `detail.pictures` 에 기록).
+
+- **장면 id = 본문 노드 id**(`p1`, `c1.c1a.consequence`, `c1.c1b.rewind.consequence`, `end.original`, `end.alt` …, rewind 시도 접미사 `#n` 은 뺀다).
+- **파일 위치**: `public/img/<storyId>/<장면 id의 '.'을 '_'로>.png`. 예: `public/img/heungbu/c1_c1b_rewind_consequence.png`, `public/img/heungbu/end_alt.png`.
+- **재사용 규칙**: `bridge`·`contrast`·`contrastFinal`·`echo`(분기 off의 `offNarration` 포함) 화면은 같은 선택지의 `consequence` 그림을 쓰고, 그것도 없으면 직전 척추 passage 그림을 쓴다. 선택·이유·이해 질문 화면은 직전에 보여 준 그림을 그대로 둔다.
+- **오버레이**: 투명 PNG를 `public/img/common/<name>.png` 에 넣고 시나리오 JSON 최상위 `art.motions` 에 적는다. 그 장면의 그 페이지에 들어설 때 1회(1.2~2초) 움직이고 끝 상태로 멈춘다. 기기의 '동작 줄이기' 설정이면 움직임 없이 끝 상태만 보인다.
+- `art` 섹션은 없어도 된다(위 파일명 규칙으로 추정). 파일명을 바꾸거나 그림을 일부러 빼려면 `art.scenes` 에 적는다(`null` = 그 장면은 그림 없음).
+
+```json
+"art": {
+  "scenes": { "p1": { "image": "p1_house.png" }, "c1.c1b.converge.consequence": { "image": null } },
+  "motions": [
+    { "scene": "p2", "page": 2, "overlay": "swallow.png", "motion": "fall", "x": 0.6, "y": 0.4, "size": 0.25 }
+  ]
+}
+```
+
+`x`·`y` 는 그림 영역 왼쪽 위 기준 비율(0~1), `size` 는 그림 폭 대비 오버레이 폭 비율이다. 동작 집합은 `fall`(위에서 떨어짐)·`grow`(자라남)·`fly_away`(날아감)·`walk_in`(왼쪽에서 걸어 들어옴)·`walk_in_right`(오른쪽에서 걸어 들어옴)·`shiver`(떨림)·`drift_down`(천천히 내려앉음)으로 고정이다.
 
 ## 분석 메모
 
@@ -50,7 +72,7 @@ npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ �
 
 ## 금지 사항
 
-- 이미지·이모지·효과음·보상 요소를 넣지 않는다.
+- 장면 그림과 이야기와 일치하는 오버레이 애니메이션(위 6종)만 허용한다. 게임·핫스팟(누르면 반응하는 그림)·배경음·효과음·보상·장식 애니메이션은 넣지 않는다. 이모지는 쓰지 않는다.
 - API 키를 커밋하지 않는다(키는 실험자 기기 localStorage 에만, CSV·JSON 내보내기에서 제외).
 - `innerHTML` 을 쓰지 않는다. 모든 텍스트는 `textContent` 로 렌더링한다.
 - `docs/transcripts/` 는 생성물이므로 커밋하지 않는다.

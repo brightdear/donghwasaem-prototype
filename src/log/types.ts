@@ -117,6 +117,8 @@ export interface SessionMeta {
   started_epoch_ms: number;
   status: SessionStatus;
   voice?: string | null;
+  /** 장면 그림 표시 여부. 이 필드가 없는 이전 세션은 그림 기능 전(그림 없음) */
+  pictures?: boolean;
   exported?: boolean; // 내보내기 여부(미내보내기 세션 수 배지용)
 }
 
@@ -133,6 +135,8 @@ export interface Settings {
   ttsRate: number; // 기본 0.9
   voiceURI: string | null;
   manualReading: boolean;
+  /** 아이 화면 장면 그림·오버레이 표시(분기 조건과 독립) */
+  pictures: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -142,6 +146,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ttsRate: 0.9,
   voiceURI: null,
   manualReading: false,
+  pictures: true,
 };
 
 export const STORAGE_KEYS = {

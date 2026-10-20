@@ -103,6 +103,30 @@ export interface Story {
   };
   comprehension: ComprehensionQuestion[]; // 4~5개
   parentPrompts: string[]; // 2개 이상
+  /** 장면 그림·일치 애니메이션(선택). 없으면 장면 id로 파일 경로를 추정한다 */
+  art?: StoryArt;
+}
+
+// ---------- 장면 그림 (선택) ----------
+
+/** 오버레이 동작 집합(고정) */
+export const MOTIONS = ["fall", "grow", "fly_away", "walk_in", "walk_in_right", "shiver", "drift_down"] as const;
+export type Motion = (typeof MOTIONS)[number];
+
+export interface ArtMotion {
+  scene: string; // 본문 노드 id
+  page: number; // 1부터, 그 노드 문단 수 이하
+  overlay: string; // public/img/common/<overlay>
+  motion: Motion;
+  x: number; // 0~1, 그림 영역 대비 왼쪽 위치
+  y: number; // 0~1, 위쪽 위치
+  size: number; // 0~1, 그림 폭 대비 오버레이 폭
+}
+
+export interface StoryArt {
+  /** 장면 id → 파일명(public/img/<storyId>/). null이면 그 장면은 그림 없음 */
+  scenes?: Record<string, { image: string | null }>;
+  motions?: ArtMotion[];
 }
 
 // ---------- 실험 조건 (3.1) ----------

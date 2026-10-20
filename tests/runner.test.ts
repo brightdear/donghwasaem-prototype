@@ -73,6 +73,14 @@ describe("runner", () => {
     expect(views.at(-1)).toMatchObject({ screen: "passage", nextVisible: false });
   });
 
+  it("session_start detail에 pictures 기록(CSV 열 추가 없음)", () => {
+    const f = fakeTts();
+    const { runner, events, meta } = setup({ tts: f.tts });
+    meta.pictures = true;
+    runner.start();
+    expect(events()[0]!.detail).toMatchObject({ pictures: true, manualReading: false });
+  });
+
   it("tts done → ttsDone 디스패치, at은 clock", () => {
     const f = fakeTts();
     const { runner, events, views, tick } = setup({ tts: f.tts });

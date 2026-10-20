@@ -1,8 +1,8 @@
 /**
- * 시나리오 검증기 — 계획 3.2 "검증기 규칙" R1~R7.
+ * 시나리오 검증기 — 계획 3.2 "검증기 규칙" R1~R7, R9(art 섹션).
  * 금지어·이모지 검사는 report/filter.ts와 독립적으로 여기서 자체 구현한다.
  */
-import type { Story } from "./types";
+import { MOTIONS, type Motion, type Story } from "./types";
 
 export interface SchemaError {
   code: string;
@@ -187,7 +187,83 @@ export function validateStory(story: unknown): ValidateResult {
     if (w) err("R7_FORBIDDEN_WORD", `금지어 "${w}"`, path);
   });
 
+  // ---- R9 (art 섹션, 선택) ----
+  if (story.art !== undefined) {
+    const art = story.art;
+    if (!isObj(art)) err("R9_ART", "art는 객체여야 함", "art");
+    else {
+      const pages = bodyNodePages(passages, cps, endings);
+      if (art.scenes !== undefined) {
+        if (!isObj(art.scenes)) err("R9_ART", "art.scenes는 객체여야 함", "art.scenes");
+        else
+          for (const [id, v] of Object.entries(art.scenes)) {
+            const p = `art.scenes.${id}`;
+            if (!pages.has(id)) err("R9_SCENE_ID", `장면 id가 본문 노드 id가 아님: ${id}`, p);
+            if (!isObj(v) || !(v.image === null || isStr(v.image))) err("R9_ART", "image는 파일명 또는 null", p);
+          }
+      }
+      if (art.motions !== undefined) {
+        if (!Array.isArray(art.motions)) err("R9_ART", "art.motions는 배열이어야 함", "art.motions");
+        else
+          art.motions.forEach((m, i) => {
+            const p = `art.motions[${i}]`;
+            if (!isObj(m)) return err("R9_ART", "motion 형식 오류", p);
+            if (!MOTIONS.includes(m.motion as Motion)) err("R9_MOTION", `motion은 ${MOTIONS.join("/")} 중 하나`, `${p}.motion`);
+            const count = isStr(m.scene) ? pages.get(m.scene) : undefined;
+            if (count === undefined) err("R9_SCENE_ID", `scene이 본문 노드 id가 아님: ${String(m.scene)}`, `${p}.scene`);
+            else if (!Number.isInteger(m.page) || (m.page as number) < 1 || (m.page as number) > count) {
+              err("R9_PAGE", `page는 1~${count}`, `${p}.page`);
+            }
+            if (!isStr(m.overlay)) err("R9_ART", "overlay 파일명 필요", `${p}.overlay`);
+            for (const k of ["x", "y", "size"] as const) {
+              const v = m[k];
+              if (typeof v !== "number" || !(v >= 0 && v <= 1)) err("R9_ART", `${k}는 0~1 숫자`, `${p}.${k}`);
+            }
+          });
+      }
+    }
+  }
+
   return errors.length === 0 ? { ok: true, story: story as unknown as Story } : { ok: false, errors };
+}
+
+/** 본문 노드 id(하위 노드 id 규칙, #n 접미사 제외) → 페이지 수 */
+function bodyNodePages(passages: Map<string, string[]>, cps: unknown[], endings: unknown): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const [id, ps] of passages) out.set(id, ps.length);
+  const len = (v: unknown) => (Array.isArray(v) ? v.length : 0);
+  if (isObj(endings)) {
+    for (const k of ["original", "alt"] as const) {
+      const e = endings[k];
+      out.set(`end.${k}`, isObj(e) ? len(e.paragraphs) : 0);
+    }
+  }
+  for (const cp of cps) {
+    if (!isObj(cp) || !isStr(cp.id) || !Array.isArray(cp.options)) continue;
+    for (const o of cp.options) {
+      if (!isObj(o) || !isStr(o.id)) continue;
+      const base = `${cp.id}.${o.id}`;
+      out.set(`${base}.echo`, 1);
+      if (o.matchesOriginal === true) {
+        out.set(`${base}.offNarration`, 1);
+        out.set(`${base}.consequence`, len(o.consequence));
+      }
+      const m = o.mismatch;
+      if (!isObj(m)) continue;
+      if (isObj(m.rewind)) {
+        out.set(`${base}.rewind.consequence`, len(m.rewind.consequence));
+        out.set(`${base}.rewind.contrast`, 1);
+        out.set(`${base}.rewind.contrastFinal`, 1);
+      }
+      for (const k of ["converge", "altEnding"] as const) {
+        const v = m[k];
+        if (!isObj(v)) continue;
+        out.set(`${base}.${k}.consequence`, len(v.consequence));
+        out.set(`${base}.${k}.bridge`, len(v.bridge));
+      }
+    }
+  }
+  return out;
 }
 
 function walkStrings(v: unknown, path: string, fn: (s: string, path: string) => void): void {

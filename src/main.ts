@@ -18,6 +18,7 @@ import { generateReport } from "./report/llm";
 import { createRunner, lateEvent, ttsEventToAction, type Runner } from "./ui/runner";
 import { renderExperimenter, type ExperimenterDeps } from "./ui/experimenter";
 import { renderChild } from "./ui/child";
+import { resolveArt, type ResolvedArt } from "./ui/art";
 import { renderParentHandoff, renderReport } from "./ui/report";
 
 const LONG_PRESS_MS = 2000;
@@ -46,6 +47,7 @@ function loadSettings(): Settings {
       voiceURI: typeof p.voiceURI === "string" ? p.voiceURI : d.voiceURI,
       confirmMode: p.confirmMode === "double" || p.confirmMode === "single" ? p.confirmMode : d.confirmMode,
       manualReading: typeof p.manualReading === "boolean" ? p.manualReading : d.manualReading,
+      pictures: typeof p.pictures === "boolean" ? p.pictures : d.pictures,
       defaultConditions: dcOk ? (dc as unknown as Settings["defaultConditions"]) : { ...d.defaultConditions },
     };
   } catch {
@@ -151,6 +153,7 @@ async function boot(root: HTMLElement): Promise<void> {
         conditions: cfg.conditions,
         confirm_mode: cfg.confirmMode,
         manualReading: cfg.manualReading,
+        pictures: cfg.pictures,
         started_at_iso: new Date(epoch).toISOString(),
         started_epoch_ms: epoch,
         status: "open",
@@ -169,6 +172,13 @@ async function boot(root: HTMLElement): Promise<void> {
       syncCorner();
       root.textContent = "";
       const story = cfg.story;
+      // 선택·질문 화면은 직전 그림을 유지한다. 그림 끄기면 그림을 아예 그리지 않는다
+      let lastArt: ResolvedArt | null = null;
+      const renderView = (v: Parameters<typeof renderChild>[1]) => {
+        const art = cfg.pictures ? resolveArt(story, v, lastArt, cfg.conditions) : null;
+        lastArt = art;
+        renderChild(root, v, r.dispatch, art);
+      };
       const r = createRunner({
         story,
         conditions: cfg.conditions,
@@ -178,7 +188,7 @@ async function boot(root: HTMLElement): Promise<void> {
         tts: cfg.manualReading ? null : tts,
         clock,
         nowIso,
-        render: (v) => renderChild(root, v, r.dispatch),
+        render: renderView,
         onFinished: () => onFinished(story),
       });
       runner = r;

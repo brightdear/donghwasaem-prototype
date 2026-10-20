@@ -227,5 +227,15 @@
       "feedback": { "correct": "맞아, 아기 새가 울고 있었지.", "incorrect": "참나무 아래에서 아기 새가 울고 있었어." }
     }
   ],
+  "art": {
+    "scenes": {
+      "p3": { "image": "oak_tree.png" },
+      "c3.c3b.converge.consequence": { "image": null }
+    },
+    "motions": [
+      { "scene": "p1", "page": 2, "overlay": "acorn.png", "motion": "fall", "x": 0.6, "y": 0.4, "size": 0.25 },
+      { "scene": "c1.c1b.rewind.consequence", "page": 1, "overlay": "bear.png", "motion": "walk_in", "x": 0.1, "y": 0.5, "size": 0.3 }
+    ]
+  },
   "parentPrompts": ["토리가 곰에게 도토리를 나눠 줬을 때 곰은 어떤 기분이었을까?", "너라면 아기 새를 어떻게 도와줄 것 같아?"]
 }

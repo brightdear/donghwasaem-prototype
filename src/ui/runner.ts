@@ -119,7 +119,11 @@ export function createRunner(deps: RunnerDeps): Runner {
         persist({
           event_type: "session_start",
           at,
-          detail: { voice: deps.meta.voice ?? null, manualReading: deps.engineSettings.manualReading },
+          detail: {
+            voice: deps.meta.voice ?? null,
+            manualReading: deps.engineSettings.manualReading,
+            pictures: deps.meta.pictures ?? false,
+          },
         });
         const r = init(deps.story, deps.conditions, deps.engineSettings, at);
         state = r.state;
