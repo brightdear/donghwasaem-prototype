@@ -2,6 +2,7 @@
  * 전체 배선 (계획 4 단계 2·3). 실험자 화면 → 아이 화면(runner) → 부모 넘기기 → 리포트 → 실험자 화면.
  * 모든 텍스트는 각 화면 모듈이 textContent로 넣는다(HTML 문자열 삽입 금지).
  */
+import "@fontsource/gowun-dodum/400.css";
 import "./styles.css";
 import heungbu from "./data/heungbu.json";
 import ant from "./data/ant.json";

@@ -6,7 +6,7 @@ export const STRINGS = {
   whyPrompt: "왜 그렇게 골랐어?",
   chooseAgain: "다시 골라 볼까?",
   next: "다음",
-  replay: "다시 듣기",
+  replay: "다시 듣기", // 아이 화면에서는 글을 눌러 다시 듣는다(버튼 없음)
   confirm: "이걸로 할래",
   play: "들려줘",
   start: "시작",

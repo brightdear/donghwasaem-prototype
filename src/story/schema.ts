@@ -202,6 +202,9 @@ export function validateStory(story: unknown): ValidateResult {
             if (!isObj(v) || !(v.image === null || isStr(v.image))) err("R9_ART", "image는 파일명 또는 null", p);
           }
       }
+      if (art.textRight !== undefined && !(Array.isArray(art.textRight) && art.textRight.every(isStr))) {
+        err("R9_ART", "art.textRight는 파일명 문자열 배열", "art.textRight");
+      }
       if (art.motions !== undefined) {
         if (!Array.isArray(art.motions)) err("R9_ART", "art.motions는 배열이어야 함", "art.motions");
         else

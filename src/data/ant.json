@@ -404,6 +404,7 @@
     }
   ],
   "art": {
+    "textRight": ["p4"],
     "motions": [
       { "scene": "p1", "page": 4, "overlay": "grain.webp", "motion": "grow", "x": 0.3, "y": 0.65, "size": 0.12 },
       { "scene": "c1.c1a.consequence", "page": 2, "overlay": "ant.webp", "motion": "walk_in", "x": 0.12, "y": 0.62, "size": 0.1 },

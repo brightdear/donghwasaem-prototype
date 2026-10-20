@@ -414,6 +414,7 @@
     }
   ],
   "art": {
+    "textRight": ["c1_c1a_consequence", "p3", "c3_c3c_rewind_consequence", "c3_c3b_rewind_consequence", "end_original"],
     "motions": [
       { "scene": "p1", "page": 8, "overlay": "swallow.webp", "motion": "fall", "x": 0.55, "y": 0.55, "size": 0.1 },
       { "scene": "c1.c1a.consequence", "page": 10, "overlay": "seed.webp", "motion": "fall", "x": 0.45, "y": 0.78, "size": 0.04 },

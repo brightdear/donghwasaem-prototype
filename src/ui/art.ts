@@ -28,6 +28,8 @@ export interface ResolvedArt {
   fallback?: string | null;
   /** 비어 있으면 생략 */
   overlays?: ResolvedOverlay[];
+  /** 글을 그림 오른쪽 위에 놓을 때만 "right"(기본 왼쪽 위) */
+  textSide?: "right";
 }
 
 const NO_ART: ResolvedArt = { image: null };
@@ -124,6 +126,17 @@ function bodyOverlays(story: Story, sceneId: string, page: number, image: string
 }
 
 export function resolveArt(
+  story: Story,
+  view: View,
+  lastArt: ResolvedArt | null,
+  conditions?: Conditions,
+): ResolvedArt {
+  const a = resolveImage(story, view, lastArt, conditions);
+  const stem = a.image?.split("/").pop()?.replace(/\.[^.]+$/, "");
+  return stem && story.art?.textRight?.includes(stem) ? { ...a, textSide: "right" } : a;
+}
+
+function resolveImage(
   story: Story,
   view: View,
   lastArt: ResolvedArt | null,

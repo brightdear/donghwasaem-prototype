@@ -128,6 +128,12 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
     if (scene) {
       wrap.appendChild(scene);
       wrap.classList.add("has-scene");
+      // 그림이 바뀌면 앞 그림을 위에 겹쳐 두고 서서히 지워 책장을 넘기듯 이어지게 한다
+      if (prevScene) {
+        prevScene.classList.add("leaving");
+        wrap.appendChild(prevScene);
+        prevScene.addEventListener("animationend", () => prevScene.remove(), { once: true });
+      }
     }
   }
 
@@ -136,11 +142,12 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
     return;
   }
 
-  // 그림책 지면처럼 글은 그림 위 빈 곳(하늘)에 얹는 상자 하나에 모은다
+  // 그림책 지면처럼 글은 그림의 빈 곳에 바로 얹는다. 글을 누르면 다시 읽어 준다('다시 듣기' 버튼 대신)
+  if (art?.textSide === "right") wrap.dataset.text = "right";
+  else delete wrap.dataset.text;
   const text = el("div", "page-text");
+  text.addEventListener("click", () => dispatch({ type: "replay" }));
   wrap.appendChild(text);
-
-  const replay = () => button("btn btn-secondary", STRINGS.replay, () => dispatch({ type: "replay" }));
 
   if (view.screen === "choice") {
     text.appendChild(el("p", "child-text prompt", view.prompt));
@@ -158,7 +165,6 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
         button("btn btn-primary", STRINGS.confirm, () => dispatch({ type: "confirm", optionId: sel })),
       );
     }
-    actions.appendChild(replay());
     wrap.appendChild(actions);
     return;
   }
@@ -187,7 +193,6 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
         actions.appendChild(button("btn btn-primary", STRINGS.next, () => dispatch({ type: "next" })));
       }
     }
-    actions.appendChild(replay());
     wrap.appendChild(actions);
     return;
   }
@@ -198,6 +203,5 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
   if (view.nextVisible) {
     actions.appendChild(button("btn btn-primary", STRINGS.next, () => dispatch({ type: "next" })));
   }
-  actions.appendChild(replay());
   wrap.appendChild(actions);
 }
