@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 2,
+  "id": "mini",
+  "title": "다람쥐 토리",
+  "spine": [
+    { "type": "passage", "id": "p1", "paragraphs": ["숲속에 다람쥐 토리가 살았어요.", "어느 날 토리는 빨간 도토리 세 개를 주웠어요."] },
+    { "type": "choice", "id": "c1" },
+    { "type": "passage", "id": "p2", "paragraphs": ["숲길 끝에 작은 냇물이 있었어요.", "냇물 위에는 좁은 나무다리가 놓여 있었어요."] },
+    { "type": "choice", "id": "c2" },
+    { "type": "passage", "id": "p3", "paragraphs": ["건너편에는 커다란 참나무가 있었어요.", "참나무 아래에서 아기 새가 울고 있었어요."] },
+    { "type": "choice", "id": "c3" },
+    { "type": "ending", "id": "end" }
+  ],
+  "choicePoints": [
+    {
+      "id": "c1",
+      "prompt": "토리는 도토리를 어떻게 할까?",
+      "options": [
+        {
+          "id": "c1a",
+          "label": "곰에게 하나 나눠 준다",
+          "matchesOriginal": true,
+          "echo": "토리가 곰에게 나눠 주기로 했구나. 그래서…",
+          "offNarration": "토리는 곰에게 도토리 하나를 나눠 주었어요.",
+          "consequence": ["곰은 고맙다며 활짝 웃었어요.", "둘은 함께 도토리를 맛있게 먹었어요."],
+          "why": [
+            { "id": "c1a-w1", "text": "곰이 배고파 보여서", "reasonType": "others_feeling" },
+            { "id": "c1a-w2", "text": "같이 먹으면 즐거워서", "reasonType": "outcome" }
+          ]
+        },
+        {
+          "id": "c1b",
+          "label": "혼자 다 먹는다",
+          "matchesOriginal": false,
+          "echo": "토리가 혼자 다 먹기로 했구나. 그래서…",
+          "why": [
+            { "id": "c1b-w1", "text": "내가 배고파서", "reasonType": "other" },
+            { "id": "c1b-w2", "text": "내가 주운 거라서", "reasonType": "rule" }
+          ],
+          "mismatch": {
+            "rewind": {
+              "consequence": ["토리는 배가 불렀지만 곰은 쓸쓸해 보였어요."],
+              "contrast": "만약 토리가 곰에게 나눠 줬다면 어땠을까?",
+              "contrastFinal": "이번에는 토리가 곰에게 도토리를 나눠 주기로 했어."
+            },
+            "converge": {
+              "consequence": ["토리는 혼자 도토리를 먹었어요."],
+              "bridge": ["배가 부른 토리는 숲길을 따라 걸었어요."]
+            },
+            "altEnding": {
+              "consequence": ["토리는 혼자 도토리를 먹었어요.", "곰은 조용히 돌아갔어요."],
+              "bridge": ["토리는 혼자 숲길을 따라 걸었어요."]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "c2",
+      "prompt": "토리는 냇물을 어떻게 건널까?",
+      "options": [
+        {
+          "id": "c2a",
+          "label": "다리를 천천히 건넌다",
+          "matchesOriginal": true,
+          "echo": "토리가 천천히 건너기로 했구나. 그래서…",
+          "offNarration": "토리는 나무다리를 천천히 건넜어요.",
+          "consequence": ["토리는 한 걸음씩 조심조심 걸었어요.", "토리는 무사히 건너편에 닿았어요."],
+          "why": [
+            { "id": "c2a-w1", "text": "떨어질까 봐 무서워서", "reasonType": "outcome" },
+            { "id": "c2a-w2", "text": "다리에서는 천천히 가야 해서", "reasonType": "rule" },
+            { "id": "c2a-w3", "text": "그냥 그러고 싶어서", "reasonType": "other" }
+          ]
+        },
+        {
+          "id": "c2b",
+          "label": "폴짝 뛰어서 건넌다",
+          "matchesOriginal": false,
+          "echo": "토리가 폴짝 뛰기로 했구나. 그래서…",
+          "why": [
+            { "id": "c2b-w1", "text": "빨리 가고 싶어서", "reasonType": "outcome" },
+            { "id": "c2b-w2", "text": "재미있을 것 같아서", "reasonType": "other" }
+          ],
+          "mismatch": {
+            "rewind": {
+              "consequence": ["토리는 미끄러져 꼬리가 젖었어요."],
+              "contrast": "만약 토리가 천천히 건넜다면 어땠을까?",
+              "contrastFinal": "이번에는 토리가 다리를 천천히 건너기로 했어."
+            },
+            "converge": {
+              "consequence": ["토리는 미끄러져 꼬리가 조금 젖었어요."],
+              "bridge": ["토리는 꼬리를 털고 건너편에 닿았어요."]
+            },
+            "altEnding": {
+              "consequence": ["토리는 미끄러져 꼬리가 흠뻑 젖었어요."],
+              "bridge": ["토리는 젖은 꼬리로 건너편에 닿았어요."]
+            }
+          }
+        },
+        {
+          "id": "c2c",
+          "label": "건너지 않고 기다린다",
+          "matchesOriginal": false,
+          "echo": "토리가 기다리기로 했구나. 그래서…",
+          "why": [
+            { "id": "c2c-w1", "text": "다리가 무서워서", "reasonType": "other" },
+            { "id": "c2c-w2", "text": "누가 도와줄 것 같아서", "reasonType": "outcome" }
+          ],
+          "mismatch": {
+            "rewind": {
+              "consequence": ["토리는 한참 동안 냇가에 앉아 있었어요."],
+              "contrast": "만약 토리가 천천히 건넜다면 어땠을까?",
+              "contrastFinal": "이번에는 토리가 용기를 내서 천천히 건너기로 했어."
+            },
+            "converge": {
+              "consequence": ["토리는 냇가에 앉아 기다렸어요."],
+              "bridge": ["지나가던 거북이 토리를 등에 태워 건너편에 내려 주었어요."]
+            },
+            "altEnding": {
+              "consequence": ["토리는 해가 기울 때까지 기다렸어요."],
+              "bridge": ["지나가던 거북이 토리를 건너편에 내려 주었어요."]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "c3",
+      "prompt": "토리는 아기 새를 어떻게 할까?",
+      "options": [
+        {
+          "id": "c3a",
+          "label": "둥지에 올려 준다",
+          "matchesOriginal": true,
+          "echo": "토리가 아기 새를 도와주기로 했구나. 그래서…",
+          "offNarration": "토리는 아기 새를 둥지에 올려 주었어요.",
+          "consequence": ["아기 새는 둥지에서 짹짹 노래했어요."],
+          "why": [
+            { "id": "c3a-w1", "text": "아기 새가 슬퍼 보여서", "reasonType": "others_feeling" },
+            { "id": "c3a-w2", "text": "어려운 친구는 도와야 해서", "reasonType": "rule" }
+          ]
+        },
+        {
+          "id": "c3b",
+          "label": "모른 척 지나간다",
+          "matchesOriginal": false,
+          "echo": "토리가 모른 척하기로 했구나. 그래서…",
+          "why": [
+            { "id": "c3b-w1", "text": "집에 빨리 가고 싶어서", "reasonType": "outcome" },
+            { "id": "c3b-w2", "text": "나무가 너무 높아서", "reasonType": "other" }
+          ],
+          "mismatch": {
+            "rewind": {
+              "consequence": ["아기 새는 계속 울었어요."],
+              "contrast": "만약 토리가 아기 새를 도와줬다면 어땠을까?",
+              "contrastFinal": "이번에는 토리가 아기 새를 둥지에 올려 주기로 했어."
+            },
+            "converge": {
+              "consequence": ["토리는 몇 걸음 가다가 뒤를 돌아보았어요."],
+              "bridge": ["마침 엄마 새가 날아와 아기 새를 데려갔어요."]
+            },
+            "altEnding": {
+              "consequence": ["토리는 그대로 집으로 향했어요."],
+              "bridge": ["숲에는 아기 새 울음소리만 남았어요."]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "endings": {
+    "original": { "paragraphs": ["엄마 새가 날아와 고맙다고 노래했어요.", "토리는 기분 좋게 집으로 돌아갔어요."] },
+    "alt": { "paragraphs": ["토리는 집으로 돌아갔어요.", "토리는 오늘 일을 곰곰이 생각해 보았어요."] }
+  },
+  "comprehension": [
+    {
+      "id": "q1",
+      "type": "explicit",
+      "prompt": "토리가 주운 것은 무엇이었지?",
+      "options": [
+        { "id": "q1a", "text": "도토리" },
+        { "id": "q1b", "text": "사과" },
+        { "id": "q1c", "text": "버섯" }
+      ],
+      "answer": "q1a",
+      "refersTo": ["p1"],
+      "answerFact": "빨간 도토리",
+      "feedback": { "correct": "맞아, 토리는 도토리를 주웠지.", "incorrect": "토리는 빨간 도토리를 주웠어." }
+    },
+    {
+      "id": "q2",
+      "type": "inference",
+      "prompt": "냇물을 건너기가 왜 어려웠을까?",
+      "options": [
+        { "id": "q2a", "text": "다리가 좁아서" },
+        { "id": "q2b", "text": "비가 와서" }
+      ],
+      "answer": "q2a",
+      "refersTo": ["p2"],
+      "answerFact": "좁은 나무다리",
+      "feedback": { "correct": "맞아, 다리가 좁았지.", "incorrect": "냇물 위 나무다리가 좁았어." }
+    },
+    {
+      "id": "q3",
+      "type": "sequence",
+      "prompt": "토리가 먼저 본 것은 무엇이었지?",
+      "options": [
+        { "id": "q3a", "text": "냇물" },
+        { "id": "q3b", "text": "참나무" }
+      ],
+      "answer": "q3a",
+      "refersTo": ["p2", "p3"],
+      "answerFact": ["작은 냇물", "커다란 참나무"],
+      "feedback": { "correct": "맞아, 냇물을 먼저 봤지.", "incorrect": "토리는 냇물을 먼저 보고 참나무를 봤어." }
+    },
+    {
+      "id": "q4",
+      "type": "explicit",
+      "prompt": "참나무 아래에서 누가 울고 있었지?",
+      "options": [
+        { "id": "q4a", "text": "아기 새" },
+        { "id": "q4b", "text": "아기 토끼" }
+      ],
+      "answer": "q4a",
+      "refersTo": ["p3"],
+      "answerFact": "아기 새",
+      "feedback": { "correct": "맞아, 아기 새가 울고 있었지.", "incorrect": "참나무 아래에서 아기 새가 울고 있었어." }
+    }
+  ],
+  "parentPrompts": ["토리가 곰에게 도토리를 나눠 줬을 때 곰은 어떤 기분이었을까?", "너라면 아기 새를 어떻게 도와줄 것 같아?"]
+}
