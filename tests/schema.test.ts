@@ -196,7 +196,7 @@ describe("R9 art 섹션(선택)", () => {
   });
   it("scenes 키가 노드 id가 아님 → R9_SCENE_ID", () => {
     const s = clone();
-    s.art.scenes["c1.c1a.bridge"] = { image: "x.png" };
+    s.art.scenes["c1.c1a.bridge"] = { image: "x.webp" };
     expect(codes(s)).toContain("R9_SCENE_ID");
   });
   it("page가 문단 수 초과 → R9_PAGE", () => {
@@ -208,8 +208,8 @@ describe("R9 art 섹션(선택)", () => {
   });
   it("결말·하위 노드 id도 허용", () => {
     const s = clone();
-    s.art.motions.push({ scene: "end.alt", page: 2, overlay: "leaf.png", motion: "drift_down", x: 0.5, y: 0.1, size: 0.1 });
-    s.art.scenes["c2.c2c.altEnding.bridge"] = { image: "turtle.png" };
+    s.art.motions.push({ scene: "end.alt", page: 2, overlay: "leaf.webp", motion: "drift_down", x: 0.5, y: 0.1, size: 0.1 });
+    s.art.scenes["c2.c2c.altEnding.bridge"] = { image: "turtle.webp" };
     expect(codes(s)).toEqual([]);
   });
   it("x·y·size 범위 밖 → R9_ART", () => {

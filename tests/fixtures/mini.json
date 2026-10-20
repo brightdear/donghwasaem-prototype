@@ -229,12 +229,12 @@
   ],
   "art": {
     "scenes": {
-      "p3": { "image": "oak_tree.png" },
+      "p3": { "image": "oak_tree.webp" },
       "c3.c3b.converge.consequence": { "image": null }
     },
     "motions": [
-      { "scene": "p1", "page": 2, "overlay": "acorn.png", "motion": "fall", "x": 0.6, "y": 0.4, "size": 0.25 },
-      { "scene": "c1.c1b.rewind.consequence", "page": 1, "overlay": "bear.png", "motion": "walk_in", "x": 0.1, "y": 0.5, "size": 0.3 }
+      { "scene": "p1", "page": 2, "overlay": "acorn.webp", "motion": "fall", "x": 0.6, "y": 0.4, "size": 0.25 },
+      { "scene": "c1.c1b.rewind.consequence", "page": 1, "overlay": "bear.webp", "motion": "walk_in", "x": 0.1, "y": 0.5, "size": 0.3 }
     ]
   },
   "parentPrompts": ["토리가 곰에게 도토리를 나눠 줬을 때 곰은 어떤 기분이었을까?", "너라면 아기 새를 어떻게 도와줄 것 같아?"]

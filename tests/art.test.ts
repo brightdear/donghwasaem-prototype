@@ -24,7 +24,7 @@ const CONV: Conditions = { branching: true, mismatch: "converge", askWhy: true }
 
 describe("장면 id·파일 규칙", () => {
   it("'.'→'_', #n 접미사 제거", () => {
-    expect(sceneFile("c1.c1b.rewind.consequence")).toBe("c1_c1b_rewind_consequence.png");
+    expect(sceneFile("c1.c1b.rewind.consequence")).toBe("c1_c1b_rewind_consequence.webp");
     expect(sceneIdOf("c1.c1b.rewind.consequence#2")).toBe("c1.c1b.rewind.consequence");
   });
 });
@@ -32,53 +32,53 @@ describe("장면 id·파일 규칙", () => {
 describe("resolveArt", () => {
   it("passage → 자기 장면(기본 경로 추정)", () => {
     const h = heungbu as unknown as Story;
-    expect(resolveArt(h, body("passage", "p1"), null)).toEqual({ image: img("heungbu", "p1.png"), fallback: null });
+    expect(resolveArt(h, body("passage", "p1"), null)).toEqual({ image: img("heungbu", "p1.webp"), fallback: null });
   });
 
   it("art.scenes 파일명 우선, null이면 그림 없음", () => {
-    expect(resolveArt(story, body("passage", "p3"), null).image).toBe(img("mini", "oak_tree.png"));
+    expect(resolveArt(story, body("passage", "p3"), null).image).toBe(img("mini", "oak_tree.webp"));
     expect(resolveArt(story, body("consequence", "c3.c3b.converge.consequence", 1, "c3"), null).image).toBeNull();
   });
 
   it("bridge → 같은 선택지 consequence 재사용, 다음 후보는 직전 passage", () => {
     const a = resolveArt(story, body("bridge", "c1.c1b.converge.bridge", 1, "c1"), null, CONV);
-    expect(a.image).toBe(img("mini", "c1_c1b_converge_consequence.png"));
-    expect(a.fallback).toBe(img("mini", "p1.png"));
+    expect(a.image).toBe(img("mini", "c1_c1b_converge_consequence.webp"));
+    expect(a.fallback).toBe(img("mini", "p1.webp"));
   });
 
   it("consequence 그림이 null이면 bridge는 직전 passage", () => {
     const a = resolveArt(story, body("bridge", "c3.c3b.converge.bridge", 1, "c3"), null, CONV);
-    expect(a.image).toBe(img("mini", "oak_tree.png"));
+    expect(a.image).toBe(img("mini", "oak_tree.webp"));
   });
 
   it("contrast(rewind #n) → rewind.consequence 재사용", () => {
     const a = resolveArt(story, body("contrast", "c1.c1b.rewind.contrast#1", 1, "c1"), null);
-    expect(a.image).toBe(img("mini", "c1_c1b_rewind_consequence.png"));
+    expect(a.image).toBe(img("mini", "c1_c1b_rewind_consequence.webp"));
   });
 
   it("echo → 원작이면 consequence, 다른 선택이면 조건의 consequence, offNarration도 consequence", () => {
-    expect(resolveArt(story, body("echo", "c1.c1a.echo", 1, "c1"), null).image).toBe(img("mini", "c1_c1a_consequence.png"));
+    expect(resolveArt(story, body("echo", "c1.c1a.echo", 1, "c1"), null).image).toBe(img("mini", "c1_c1a_consequence.webp"));
     expect(resolveArt(story, body("echo", "c1.c1b.echo", 1, "c1"), null, CONV).image).toBe(
-      img("mini", "c1_c1b_converge_consequence.png"),
+      img("mini", "c1_c1b_converge_consequence.webp"),
     );
-    expect(resolveArt(story, body("echo", "c1.c1a.offNarration", 1, "c1"), null).image).toBe(img("mini", "c1_c1a_consequence.png"));
+    expect(resolveArt(story, body("echo", "c1.c1a.offNarration", 1, "c1"), null).image).toBe(img("mini", "c1_c1a_consequence.webp"));
   });
 
   it("선택 화면 → 직전 그림 유지, 직전이 없으면 그림 없음", () => {
     const last = resolveArt(story, body("passage", "p1", 1), null);
-    expect(resolveArt(story, choice, last)).toEqual({ image: img("mini", "p1.png"), fallback: null });
+    expect(resolveArt(story, choice, last)).toEqual({ image: img("mini", "p1.webp"), fallback: null });
     expect(resolveArt(story, choice, null)).toEqual({ image: null });
   });
 
   it("altEnding 결말 → end_alt", () => {
-    expect(resolveArt(story, body("ending", "end.alt"), null).image).toBe(img("mini", "end_alt.png"));
+    expect(resolveArt(story, body("ending", "end.alt"), null).image).toBe(img("mini", "end_alt.webp"));
   });
 
   it("motion은 해당 페이지에 처음 들어올 때 animate", () => {
     expect(resolveArt(story, body("passage", "p1", 1), null).overlays).toBeUndefined();
     const o = resolveArt(story, body("passage", "p1", 2), null).overlays;
     expect(o).toHaveLength(1);
-    expect(o?.[0]).toMatchObject({ src: `${B}img/common/acorn.png`, motion: "fall", x: 0.6, y: 0.4, size: 0.25, animate: true });
+    expect(o?.[0]).toMatchObject({ src: `${B}img/common/acorn.webp`, motion: "fall", x: 0.6, y: 0.4, size: 0.25, animate: true });
     // rewind #n 노드도 장면 id로 맞춘다
     const r = resolveArt(story, body("consequence", "c1.c1b.rewind.consequence#1", 1, "c1"), null).overlays;
     expect(r?.[0]?.motion).toBe("walk_in");
@@ -101,7 +101,7 @@ describe("resolveArt", () => {
     expect(p2.overlays?.[0]).toMatchObject({ motion: "fall", animate: false, key: p1.overlays?.[0]?.key });
     // 선택 화면 → 같은 그림 + 정적 오버레이, 선택 재렌더에서도 유지
     const ch = resolveArt(s, choice, p2);
-    expect(ch.image).toBe(img("mini", "p1.png"));
+    expect(ch.image).toBe(img("mini", "p1.webp"));
     expect(ch.overlays?.[0]).toMatchObject({ motion: "fall", animate: false });
     expect(resolveArt(s, { ...choice, selectedOptionId: "c1a" } as View, ch).overlays?.[0]?.animate).toBe(false);
   });
@@ -120,7 +120,7 @@ describe("resolveArt", () => {
 
   it("fly_away 뒤에는 없음", () => {
     const s = structuredClone(story);
-    s.art!.motions = [{ scene: "p1", page: 1, overlay: "bird.png", motion: "fly_away", x: 0.5, y: 0.3, size: 0.2 }];
+    s.art!.motions = [{ scene: "p1", page: 1, overlay: "bird.webp", motion: "fly_away", x: 0.5, y: 0.3, size: 0.2 }];
     const a = resolveArt(s, body("passage", "p1", 1), null);
     expect(a.overlays?.[0]).toMatchObject({ motion: "fly_away", animate: true });
     expect(resolveArt(s, body("passage", "p1", 1), a).overlays?.[0]?.animate).toBe(true); // 재렌더
@@ -131,7 +131,7 @@ describe("resolveArt", () => {
   it("장면(그림)이 바뀌면 오버레이 초기화", () => {
     const p2 = resolveArt(story, body("passage", "p1", 2), null);
     const echo = resolveArt(story, body("echo", "c1.c1a.echo", 1, "c1"), p2);
-    expect(echo.image).toBe(img("mini", "c1_c1a_consequence.png"));
+    expect(echo.image).toBe(img("mini", "c1_c1a_consequence.webp"));
     expect(echo.overlays).toBeUndefined();
     expect(resolveArt(story, body("passage", "p2", 1), p2).overlays).toBeUndefined();
   });

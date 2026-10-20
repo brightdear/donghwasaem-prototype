@@ -136,10 +136,14 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
     return;
   }
 
+  // 그림책 지면처럼 글은 그림 위 빈 곳(하늘)에 얹는 상자 하나에 모은다
+  const text = el("div", "page-text");
+  wrap.appendChild(text);
+
   const replay = () => button("btn btn-secondary", STRINGS.replay, () => dispatch({ type: "replay" }));
 
   if (view.screen === "choice") {
-    wrap.appendChild(el("p", "child-text prompt", view.prompt));
+    text.appendChild(el("p", "child-text prompt", view.prompt));
     wrap.appendChild(
       optionList(
         view.options.map((o) => ({ id: o.id, text: o.label })),
@@ -160,7 +164,7 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
   }
 
   if (view.screen === "why" || view.screen === "comprehension") {
-    wrap.appendChild(el("p", "child-text prompt", view.prompt));
+    text.appendChild(el("p", "child-text prompt", view.prompt));
     const isWhy = view.screen === "why";
     const feedback = view.screen === "comprehension" ? view.feedback : null;
     if (feedback === null) {
@@ -178,7 +182,7 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
       );
     }
     if (feedback !== null) {
-      wrap.appendChild(el("p", "child-text feedback", feedback));
+      text.appendChild(el("p", "child-text feedback", feedback));
       if (view.screen === "comprehension" && view.nextVisible) {
         actions.appendChild(button("btn btn-primary", STRINGS.next, () => dispatch({ type: "next" })));
       }
@@ -189,7 +193,7 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
   }
 
   // BodyView: 한 페이지(문단 1개)만. 페이지 번호는 아이 화면에 표시하지 않는다
-  for (const p of view.paragraphs) wrap.appendChild(el("p", "child-text child-page", p));
+  for (const p of view.paragraphs) text.appendChild(el("p", "child-text child-page", p));
   const actions = el("div", "actions");
   if (view.nextVisible) {
     actions.appendChild(button("btn btn-primary", STRINGS.next, () => dispatch({ type: "next" })));

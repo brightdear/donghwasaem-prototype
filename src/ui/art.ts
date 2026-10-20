@@ -1,6 +1,6 @@
 /**
  * 장면 그림 해석 (순수 함수, DOM 없음).
- * 장면 id = 본문 노드 id(#n 접미사 제외). 파일: img/<storyId>/<장면 id의 '.'→'_'>.png
+ * 장면 id = 본문 노드 id(#n 접미사 제외). 파일: img/<storyId>/<장면 id의 '.'→'_'>.webp
  * - passage·consequence·ending: 자기 장면
  * - bridge·contrast·contrastFinal·echo·offNarration: 같은 선택지의 consequence 장면(없으면 직전 passage)
  *   단 art.scenes에 그 노드 자체의 그림이 적혀 있으면 그것을 쓴다
@@ -40,7 +40,7 @@ export function sceneIdOf(nodeId: string): string {
 }
 
 export function sceneFile(sceneId: string): string {
-  return `${sceneId.replace(/\./g, "_")}.png`;
+  return `${sceneId.replace(/\./g, "_")}.webp`;
 }
 
 /** 장면 그림 경로. art.scenes에 null로 적혀 있으면 null */
