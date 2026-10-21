@@ -567,33 +567,6 @@
     ],
     "motions": [
       {
-        "scene": "c2.c2a.consequence",
-        "page": 5,
-        "overlay": "gourd.webp",
-        "motion": "grow",
-        "x": 0.41,
-        "y": 0.08,
-        "size": 0.12
-      },
-      {
-        "scene": "c2.c2a.consequence",
-        "page": 5,
-        "overlay": "gourd.webp",
-        "motion": "grow",
-        "x": 0.62,
-        "y": 0.1,
-        "size": 0.12
-      },
-      {
-        "scene": "c2.c2a.consequence",
-        "page": 5,
-        "overlay": "gourd.webp",
-        "motion": "grow",
-        "x": 0.82,
-        "y": 0.1,
-        "size": 0.12
-      },
-      {
         "scene": "p3",
         "page": 1,
         "overlay": "snowflake.webp",
@@ -664,8 +637,50 @@
         "c1_c1b_altEnding_bridge_01.webp",
         "c1_c1b_converge_bridge_03.webp"
       ],
+      "p2": [
+        "p2.webp",
+        "p2_02.webp",
+        "p2_03.webp",
+        "p2_04.webp"
+      ],
+      "c2.c2a.offNarration": [
+        "c2_c2a_offNarration_01.webp"
+      ],
+      "c2.c2a.consequence": [
+        "c2_c2a_consequence.webp",
+        "c2_c2a_consequence_02.webp",
+        "c2_c2a_consequence_03.webp",
+        "c2_c2a_consequence_04.webp",
+        "c2_c2a_consequence_05.webp",
+        "c2_c2a_consequence_06.webp",
+        "c2_c2a_consequence_07.webp",
+        "c2_c2a_consequence_08.webp"
+      ],
+      "c2.c2b.rewind.consequence": [
+        "c2_c2b_rewind_consequence.webp",
+        "c2_c2b_rewind_consequence_02.webp"
+      ],
+      "c2.c2b.rewind.contrast": [
+        "c2_c2a_consequence_03.webp"
+      ],
+      "c2.c2b.rewind.contrastFinal": [
+        "c2_c2a_offNarration_01.webp"
+      ],
+      "c2.c2b.converge.consequence": [
+        "c2_c2b_rewind_consequence.webp",
+        "c2_c2b_rewind_consequence_02.webp"
+      ],
+      "c2.c2b.converge.bridge": [
+        "c2_c2b_converge_bridge_01.webp",
+        "c2_c2b_converge_bridge_02.webp",
+        "c2_c2b_converge_bridge_03.webp"
+      ],
       "c2.c2b.altEnding.consequence": [
         "c2_c2b_altEnding_consequence.webp"
+      ],
+      "c2.c2b.altEnding.bridge": [
+        "c2_c2b_altEnding_bridge_01.webp",
+        "c2_c2b_converge_bridge_03.webp"
       ],
       "c3.c3b.rewind.consequence": [
         "c3_c3b_rewind_consequence.webp",
