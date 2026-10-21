@@ -18,7 +18,10 @@
         "제비는 날개를 파닥였지만 날아오르지 못했어요. 한쪽 다리가 많이 아파 보였어요."
       ]
     },
-    { "type": "choice", "id": "c1" },
+    {
+      "type": "choice",
+      "id": "c1"
+    },
     {
       "type": "passage",
       "id": "p2",
@@ -29,7 +32,10 @@
         "마당 한쪽에는 작은 빈 땅이 있었어요. 부엌 선반 위에는 빈 그릇도 하나 있었어요."
       ]
     },
-    { "type": "choice", "id": "c2" },
+    {
+      "type": "choice",
+      "id": "c2"
+    },
     {
       "type": "passage",
       "id": "p3",
@@ -43,7 +49,10 @@
         "흥부는 놀부 형이 쌀 한 줌도 나눠 주지 않던 날이 떠올랐어요."
       ]
     },
-    { "type": "choice", "id": "c3" },
+    {
+      "type": "choice",
+      "id": "c3"
+    },
     {
       "type": "passage",
       "id": "p4",
@@ -54,7 +63,10 @@
         "흥부는 마당에 서서 파란 하늘을 올려다보았어요."
       ]
     },
-    { "type": "ending", "id": "end" }
+    {
+      "type": "ending",
+      "id": "end"
+    }
   ],
   "choicePoints": [
     {
@@ -68,9 +80,21 @@
           "echo": "흥부가 제비를 돌봐 주기로 했구나. 그래서…",
           "offNarration": "흥부는 다친 제비를 두 손으로 살며시 감싸 안았어요.",
           "why": [
-            { "id": "c1a-w1", "text": "제비가 아파 보여서", "reasonType": "others_feeling" },
-            { "id": "c1a-w2", "text": "도와주면 제비가 다시 날 수 있어서", "reasonType": "outcome" },
-            { "id": "c1a-w3", "text": "아픈 동물은 도와줘야 해서", "reasonType": "rule" }
+            {
+              "id": "c1a-w1",
+              "text": "제비가 아파 보여서",
+              "reasonType": "others_feeling"
+            },
+            {
+              "id": "c1a-w2",
+              "text": "도와주면 제비가 다시 날 수 있어서",
+              "reasonType": "outcome"
+            },
+            {
+              "id": "c1a-w3",
+              "text": "아픈 동물은 도와줘야 해서",
+              "reasonType": "rule"
+            }
           ],
           "consequence": [
             "흥부는 제비를 집으로 데려왔어요.",
@@ -91,9 +115,21 @@
           "matchesOriginal": false,
           "echo": "흥부가 그냥 지나가기로 했구나. 그래서…",
           "why": [
-            { "id": "c1b-w1", "text": "할 일이 많아서", "reasonType": "other" },
-            { "id": "c1b-w2", "text": "엄마 제비가 데리러 올 것 같아서", "reasonType": "outcome" },
-            { "id": "c1b-w3", "text": "제비를 만지면 안 될 것 같아서", "reasonType": "rule" }
+            {
+              "id": "c1b-w1",
+              "text": "할 일이 많아서",
+              "reasonType": "other"
+            },
+            {
+              "id": "c1b-w2",
+              "text": "엄마 제비가 데리러 올 것 같아서",
+              "reasonType": "outcome"
+            },
+            {
+              "id": "c1b-w3",
+              "text": "제비를 만지면 안 될 것 같아서",
+              "reasonType": "rule"
+            }
           ],
           "mismatch": {
             "rewind": {
@@ -138,9 +174,21 @@
           "echo": "흥부가 박씨를 심기로 했구나. 그래서…",
           "offNarration": "흥부는 박씨를 마당 한쪽 빈 땅에 심었어요.",
           "why": [
-            { "id": "c2a-w1", "text": "씨앗은 땅에 심어야 자라서", "reasonType": "rule" },
-            { "id": "c2a-w2", "text": "박이 열리면 가족이 먹을 수 있어서", "reasonType": "outcome" },
-            { "id": "c2a-w3", "text": "소중한 선물 같아서", "reasonType": "other" }
+            {
+              "id": "c2a-w1",
+              "text": "씨앗은 땅에 심어야 자라서",
+              "reasonType": "rule"
+            },
+            {
+              "id": "c2a-w2",
+              "text": "박이 열리면 가족이 먹을 수 있어서",
+              "reasonType": "outcome"
+            },
+            {
+              "id": "c2a-w3",
+              "text": "소중한 선물 같아서",
+              "reasonType": "other"
+            }
           ],
           "consequence": [
             "흥부는 손가락으로 땅을 콕콕 파고 박씨를 묻었어요.",
@@ -159,8 +207,16 @@
           "matchesOriginal": false,
           "echo": "흥부가 박씨를 그릇에 넣어 두기로 했구나. 그래서…",
           "why": [
-            { "id": "c2b-w1", "text": "잃어버리지 않으려고", "reasonType": "outcome" },
-            { "id": "c2b-w2", "text": "나중에 심고 싶어서", "reasonType": "other" }
+            {
+              "id": "c2b-w1",
+              "text": "잃어버리지 않으려고",
+              "reasonType": "outcome"
+            },
+            {
+              "id": "c2b-w2",
+              "text": "나중에 심고 싶어서",
+              "reasonType": "other"
+            }
           ],
           "mismatch": {
             "rewind": {
@@ -206,9 +262,21 @@
           "echo": "흥부가 놀부 형을 집 안으로 들이기로 했구나. 그래서…",
           "offNarration": "흥부는 문을 활짝 열고 놀부 형을 집 안으로 들였어요.",
           "why": [
-            { "id": "c3a-w1", "text": "형이 추워 보여서", "reasonType": "others_feeling" },
-            { "id": "c3a-w2", "text": "가족은 서로 도와야 해서", "reasonType": "rule" },
-            { "id": "c3a-w3", "text": "형이랑 다시 사이좋게 지낼 수 있어서", "reasonType": "outcome" }
+            {
+              "id": "c3a-w1",
+              "text": "형이 추워 보여서",
+              "reasonType": "others_feeling"
+            },
+            {
+              "id": "c3a-w2",
+              "text": "가족은 서로 도와야 해서",
+              "reasonType": "rule"
+            },
+            {
+              "id": "c3a-w3",
+              "text": "형이랑 다시 사이좋게 지낼 수 있어서",
+              "reasonType": "outcome"
+            }
           ],
           "consequence": [
             "흥부는 문을 활짝 열었어요. '형님, 어서 들어오세요. 밖이 많이 춥지요?'",
@@ -227,8 +295,16 @@
           "matchesOriginal": false,
           "echo": "흥부가 문을 열지 않기로 했구나. 그래서…",
           "why": [
-            { "id": "c3b-w1", "text": "형이 예전에 쌀을 안 줘서", "reasonType": "other" },
-            { "id": "c3b-w2", "text": "형이 또 욕심을 부릴까 봐", "reasonType": "outcome" }
+            {
+              "id": "c3b-w1",
+              "text": "형이 예전에 쌀을 안 줘서",
+              "reasonType": "other"
+            },
+            {
+              "id": "c3b-w2",
+              "text": "형이 또 욕심을 부릴까 봐",
+              "reasonType": "outcome"
+            }
           ],
           "mismatch": {
             "rewind": {
@@ -268,8 +344,16 @@
           "matchesOriginal": false,
           "echo": "흥부가 먹을 것만 건네주기로 했구나. 그래서…",
           "why": [
-            { "id": "c3c-w1", "text": "형이 배고플 것 같아서", "reasonType": "others_feeling" },
-            { "id": "c3c-w2", "text": "형을 들이기가 겁나서", "reasonType": "other" }
+            {
+              "id": "c3c-w1",
+              "text": "형이 배고플 것 같아서",
+              "reasonType": "others_feeling"
+            },
+            {
+              "id": "c3c-w2",
+              "text": "형을 들이기가 겁나서",
+              "reasonType": "other"
+            }
           ],
           "mismatch": {
             "rewind": {
@@ -332,12 +416,23 @@
       "type": "explicit",
       "prompt": "흥부가 마당에서 만난 다친 동물은 누구였지?",
       "options": [
-        { "id": "q1a", "text": "제비" },
-        { "id": "q1b", "text": "참새" },
-        { "id": "q1c", "text": "까치" }
+        {
+          "id": "q1a",
+          "text": "제비"
+        },
+        {
+          "id": "q1b",
+          "text": "참새"
+        },
+        {
+          "id": "q1c",
+          "text": "까치"
+        }
       ],
       "answer": "q1a",
-      "refersTo": ["p1"],
+      "refersTo": [
+        "p1"
+      ],
       "answerFact": "다친 제비",
       "feedback": {
         "correct": "맞아, 흥부는 다친 제비를 만났지.",
@@ -349,12 +444,23 @@
       "type": "explicit",
       "prompt": "흥부가 마당에서 주운 씨앗은 무엇이었지?",
       "options": [
-        { "id": "q2a", "text": "콩" },
-        { "id": "q2b", "text": "박씨" },
-        { "id": "q2c", "text": "도토리" }
+        {
+          "id": "q2a",
+          "text": "콩"
+        },
+        {
+          "id": "q2b",
+          "text": "박씨"
+        },
+        {
+          "id": "q2c",
+          "text": "도토리"
+        }
       ],
       "answer": "q2b",
-      "refersTo": ["p2"],
+      "refersTo": [
+        "p2"
+      ],
       "answerFact": "박씨였어요",
       "feedback": {
         "correct": "맞아, 흥부가 주운 건 작고 동그란 박씨였지.",
@@ -366,12 +472,23 @@
       "type": "inference",
       "prompt": "눈 오는 밤, 문밖에 선 놀부 형은 어떤 기분이었을까?",
       "options": [
-        { "id": "q3a", "text": "눈이 와서 신났어요" },
-        { "id": "q3b", "text": "춥고 힘들었어요" },
-        { "id": "q3c", "text": "배가 불러서 졸렸어요" }
+        {
+          "id": "q3a",
+          "text": "눈이 와서 신났어요"
+        },
+        {
+          "id": "q3b",
+          "text": "춥고 힘들었어요"
+        },
+        {
+          "id": "q3c",
+          "text": "배가 불러서 졸렸어요"
+        }
       ],
       "answer": "q3b",
-      "refersTo": ["p3"],
+      "refersTo": [
+        "p3"
+      ],
       "answerFact": "몸이 덜덜 떨렸어요",
       "feedback": {
         "correct": "맞아, 놀부 형은 몸이 덜덜 떨릴 만큼 춥고 힘들었지.",
@@ -383,12 +500,23 @@
       "type": "inference",
       "prompt": "놀부 형은 왜 밤에 흥부네 집 문을 두드렸을까?",
       "options": [
-        { "id": "q4a", "text": "잘 곳이 없어서" },
-        { "id": "q4b", "text": "박씨를 얻으려고" },
-        { "id": "q4c", "text": "눈사람을 만들자고 하려고" }
+        {
+          "id": "q4a",
+          "text": "잘 곳이 없어서"
+        },
+        {
+          "id": "q4b",
+          "text": "박씨를 얻으려고"
+        },
+        {
+          "id": "q4c",
+          "text": "눈사람을 만들자고 하려고"
+        }
       ],
       "answer": "q4a",
-      "refersTo": ["p3"],
+      "refersTo": [
+        "p3"
+      ],
       "answerFact": "오늘 밤 잘 곳이 없구나",
       "feedback": {
         "correct": "맞아, 놀부 형은 집을 잃어서 잘 곳이 없었지.",
@@ -400,13 +528,30 @@
       "type": "sequence",
       "prompt": "어떤 순서로 일이 일어났을까?",
       "options": [
-        { "id": "q5a", "text": "제비를 만나고, 박씨를 줍고, 놀부 형이 찾아왔어요" },
-        { "id": "q5b", "text": "박씨를 줍고, 제비를 만나고, 놀부 형이 찾아왔어요" },
-        { "id": "q5c", "text": "놀부 형이 찾아오고, 제비를 만나고, 박씨를 주웠어요" }
+        {
+          "id": "q5a",
+          "text": "제비를 만나고, 박씨를 줍고, 놀부 형이 찾아왔어요"
+        },
+        {
+          "id": "q5b",
+          "text": "박씨를 줍고, 제비를 만나고, 놀부 형이 찾아왔어요"
+        },
+        {
+          "id": "q5c",
+          "text": "놀부 형이 찾아오고, 제비를 만나고, 박씨를 주웠어요"
+        }
       ],
       "answer": "q5a",
-      "refersTo": ["p1", "p2", "p3"],
-      "answerFact": ["다친 제비", "박씨였어요", "문밖에 놀부 형이 서 있었어요"],
+      "refersTo": [
+        "p1",
+        "p2",
+        "p3"
+      ],
+      "answerFact": [
+        "다친 제비",
+        "박씨였어요",
+        "문밖에 놀부 형이 서 있었어요"
+      ],
       "feedback": {
         "correct": "맞아, 흥부는 먼저 제비를 만나고, 그다음 박씨를 줍고, 겨울에 놀부 형이 찾아왔지.",
         "incorrect": "흥부는 먼저 제비를 만나고, 그다음 박씨를 줍고, 겨울에 놀부 형이 찾아왔어."
@@ -414,16 +559,143 @@
     }
   ],
   "art": {
-    "textRight": ["c1_c1a_consequence", "p3", "c3_c3c_rewind_consequence", "c3_c3b_rewind_consequence", "end_original"],
+    "textRight": [
+      "p3",
+      "c3_c3c_rewind_consequence",
+      "c3_c3b_rewind_consequence",
+      "end_original"
+    ],
     "motions": [
-      { "scene": "p1", "page": 8, "overlay": "swallow_hurt.webp", "motion": "fall", "x": 0.56, "y": 0.6, "size": 0.08 },
-      { "scene": "c1.c1a.consequence", "page": 10, "overlay": "seed.webp", "motion": "fall", "x": 0.45, "y": 0.78, "size": 0.04 },
-      { "scene": "c2.c2a.consequence", "page": 5, "overlay": "gourd.webp", "motion": "grow", "x": 0.41, "y": 0.08, "size": 0.12 },
-      { "scene": "c2.c2a.consequence", "page": 5, "overlay": "gourd.webp", "motion": "grow", "x": 0.62, "y": 0.1, "size": 0.12 },
-      { "scene": "c2.c2a.consequence", "page": 5, "overlay": "gourd.webp", "motion": "grow", "x": 0.82, "y": 0.1, "size": 0.12 },
-      { "scene": "p3", "page": 1, "overlay": "snowflake.webp", "motion": "drift_down", "x": 0.5, "y": 0.08, "size": 0.03 },
-      { "scene": "p4", "page": 3, "overlay": "swallow.webp", "motion": "walk_in", "x": 0.6, "y": 0.3, "size": 0.1 }
-    ]
+      {
+        "scene": "c2.c2a.consequence",
+        "page": 5,
+        "overlay": "gourd.webp",
+        "motion": "grow",
+        "x": 0.41,
+        "y": 0.08,
+        "size": 0.12
+      },
+      {
+        "scene": "c2.c2a.consequence",
+        "page": 5,
+        "overlay": "gourd.webp",
+        "motion": "grow",
+        "x": 0.62,
+        "y": 0.1,
+        "size": 0.12
+      },
+      {
+        "scene": "c2.c2a.consequence",
+        "page": 5,
+        "overlay": "gourd.webp",
+        "motion": "grow",
+        "x": 0.82,
+        "y": 0.1,
+        "size": 0.12
+      },
+      {
+        "scene": "p3",
+        "page": 1,
+        "overlay": "snowflake.webp",
+        "motion": "drift_down",
+        "x": 0.5,
+        "y": 0.08,
+        "size": 0.03
+      },
+      {
+        "scene": "p4",
+        "page": 3,
+        "overlay": "swallow.webp",
+        "motion": "walk_in",
+        "x": 0.6,
+        "y": 0.3,
+        "size": 0.1
+      }
+    ],
+    "pages": {
+      "p1": [
+        "p1.webp",
+        "p1_02.webp",
+        "p1_03.webp",
+        "p1_04.webp",
+        "p1_05.webp",
+        "p1_06.webp",
+        "p1_07.webp",
+        "p1_08.webp",
+        "p1_09.webp"
+      ],
+      "c1.c1a.offNarration": [
+        "c1_c1a_offNarration_01.webp"
+      ],
+      "c1.c1a.consequence": [
+        "c1_c1a_consequence.webp",
+        "c1_c1a_consequence_02.webp",
+        "c1_c1a_consequence_03.webp",
+        "c1_c1a_consequence_04.webp",
+        "c1_c1a_consequence_05.webp",
+        "c1_c1a_consequence_06.webp",
+        "c1_c1a_consequence_07.webp",
+        "c1_c1a_consequence_08.webp",
+        "c1_c1a_consequence_09.webp",
+        "c1_c1a_consequence_10.webp"
+      ],
+      "c1.c1b.rewind.consequence": [
+        "c1_c1b_rewind_consequence.webp",
+        "c1_c1b_rewind_consequence_02.webp"
+      ],
+      "c1.c1b.rewind.contrast": [
+        "c1_c1a_consequence_04.webp"
+      ],
+      "c1.c1b.rewind.contrastFinal": [
+        "c1_c1a_offNarration_01.webp"
+      ],
+      "c1.c1b.converge.consequence": [
+        "c1_c1b_rewind_consequence.webp"
+      ],
+      "c1.c1b.converge.bridge": [
+        "c1_c1b_converge_bridge_01.webp",
+        "c1_c1b_converge_bridge_02.webp",
+        "c1_c1b_converge_bridge_03.webp"
+      ],
+      "c1.c1b.altEnding.consequence": [
+        "c1_c1b_altEnding_consequence.webp"
+      ],
+      "c1.c1b.altEnding.bridge": [
+        "c1_c1b_altEnding_bridge_01.webp",
+        "c1_c1b_converge_bridge_03.webp"
+      ],
+      "c2.c2b.altEnding.consequence": [
+        "c2_c2b_altEnding_consequence.webp"
+      ],
+      "c3.c3b.rewind.consequence": [
+        "c3_c3b_rewind_consequence.webp",
+        "c3_c3b_rewind_consequence_02.webp"
+      ],
+      "c3.c3b.rewind.contrast": [
+        "c3_c3a_consequence_07.webp"
+      ],
+      "c3.c3b.converge.consequence": [
+        "c3_c3b_rewind_consequence.webp"
+      ],
+      "c3.c3b.altEnding.consequence": [
+        "c3_c3b_rewind_consequence.webp"
+      ],
+      "c3.c3c.rewind.consequence": [
+        "c3_c3c_rewind_consequence.webp",
+        "c3_c3c_rewind_consequence_02.webp"
+      ],
+      "c3.c3c.rewind.contrast": [
+        "c3_c3a_consequence_07.webp"
+      ],
+      "c3.c3c.converge.consequence": [
+        "c3_c3c_rewind_consequence.webp",
+        "c3_c3c_rewind_consequence_02.webp"
+      ],
+      "c3.c3c.altEnding.consequence": [
+        "c3_c3c_rewind_consequence.webp",
+        "c3_c3c_rewind_consequence_02.webp"
+      ]
+    }
   },
   "parentPrompts": [
     "흥부가 처마 밑에서 다친 제비를 보았을 때, 흥부 마음은 어땠을까?",
