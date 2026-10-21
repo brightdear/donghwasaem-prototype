@@ -560,21 +560,11 @@
   ],
   "art": {
     "textRight": [
-      "p3",
       "c3_c3c_rewind_consequence",
       "c3_c3b_rewind_consequence",
       "end_original"
     ],
     "motions": [
-      {
-        "scene": "p3",
-        "page": 1,
-        "overlay": "snowflake.webp",
-        "motion": "drift_down",
-        "x": 0.5,
-        "y": 0.08,
-        "size": 0.03
-      },
       {
         "scene": "p4",
         "page": 3,
@@ -682,12 +672,27 @@
         "c2_c2b_altEnding_bridge_01.webp",
         "c2_c2b_converge_bridge_03.webp"
       ],
+      "p3": [
+        "p3.webp",
+        "p3_02.webp",
+        "p3_03.webp",
+        "p3_04.webp",
+        "p3_05.webp",
+        "p3_06.webp",
+        "p3_07.webp"
+      ],
+      "c3.c3a.offNarration": [
+        "c3_c3a_offNarration_01.webp"
+      ],
       "c3.c3b.rewind.consequence": [
         "c3_c3b_rewind_consequence.webp",
         "c3_c3b_rewind_consequence_02.webp"
       ],
       "c3.c3b.rewind.contrast": [
         "c3_c3a_consequence_07.webp"
+      ],
+      "c3.c3b.rewind.contrastFinal": [
+        "c3_c3a_offNarration_01.webp"
       ],
       "c3.c3b.converge.consequence": [
         "c3_c3b_rewind_consequence.webp"
@@ -701,6 +706,9 @@
       ],
       "c3.c3c.rewind.contrast": [
         "c3_c3a_consequence_07.webp"
+      ],
+      "c3.c3c.rewind.contrastFinal": [
+        "c3_c3a_offNarration_01.webp"
       ],
       "c3.c3c.converge.consequence": [
         "c3_c3c_rewind_consequence.webp",
