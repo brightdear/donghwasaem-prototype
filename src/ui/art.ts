@@ -53,6 +53,14 @@ function imageOf(story: Story, sceneId: string): string | null {
   return `${base()}img/${story.id}/${file}`;
 }
 
+/** 그 장면의 page번째(1부터) 그림. art.pages가 있으면 페이지별 파일, 없으면 장면 그림 하나. page가 -1이면 마지막 페이지 */
+function imageAt(story: Story, sceneId: string, page: number): string | null {
+  const list = story.art?.pages?.[sceneId];
+  if (!list || list.length === 0) return imageOf(story, sceneId);
+  const file = page < 0 ? list[list.length - 1]! : (list[page - 1] ?? list[list.length - 1]!);
+  return `${base()}img/${story.id}/${file}`;
+}
+
 /** choice point 바로 앞 척추 passage id */
 function passageBefore(story: Story, cpId: string): string | null {
   const i = story.spine.findIndex((n) => n.type === "choice" && n.id === cpId);
@@ -153,17 +161,20 @@ function resolveImage(
     withOverlays(a, bodyOverlays(story, sceneId, view.page, a.image, lastArt));
 
   const reuse = view.screen === "bridge" || view.screen === "contrast" || view.screen === "echo";
-  if (!reuse) return withOverlay({ image: imageOf(story, sceneId), fallback: null });
+  if (!reuse) return withOverlay({ image: imageAt(story, sceneId, view.page), fallback: null });
 
-  // 그 노드 자체 그림이 art.scenes에 명시돼 있으면 우선
+  // 그 노드 자체 그림이 art.pages·art.scenes에 명시돼 있으면 우선
+  if (story.art?.pages?.[sceneId]) return withOverlay({ image: imageAt(story, sceneId, view.page), fallback: null });
   const own = story.art?.scenes?.[sceneId];
   if (own && own.image !== null) return withOverlay({ image: imageOf(story, sceneId), fallback: null });
 
+  // echo는 이어질 consequence의 첫 그림, bridge·contrast는 앞선 consequence의 마지막 그림으로 이어 붙인다
   const conseq = consequenceFor(story, sceneId, conditions);
   const prev = view.choicePointId ? passageBefore(story, view.choicePointId) : null;
-  const candidates = [conseq, prev]
-    .filter((x): x is string => x !== null)
-    .map((id) => imageOf(story, id))
-    .filter((x): x is string => x !== null);
+  const conseqPage = view.screen === "echo" ? 1 : -1;
+  const candidates = [
+    conseq ? imageAt(story, conseq, conseqPage) : null,
+    prev ? imageAt(story, prev, -1) : null,
+  ].filter((x): x is string => x !== null);
   return withOverlay({ image: candidates[0] ?? null, fallback: candidates[1] ?? null });
 }

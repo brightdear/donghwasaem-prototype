@@ -140,3 +140,33 @@ describe("resolveArt", () => {
     expect(resolveArt(story, { screen: "parent_handoff" }, null)).toEqual({ image: null });
   });
 });
+
+describe("art.pages(페이지별 그림)", () => {
+  const paged = {
+    ...story,
+    art: {
+      ...story.art,
+      pages: {
+        p1: ["p1.webp", "p1_02.webp"],
+        "c1.c1a.consequence": ["c1_c1a_consequence.webp", "c1_c1a_consequence_02.webp"],
+      },
+    },
+  } as Story;
+
+  it("본문은 페이지마다 그 페이지 그림", () => {
+    expect(resolveArt(paged, body("passage", "p1", 1), null).image).toBe(img("mini", "p1.webp"));
+    expect(resolveArt(paged, body("passage", "p1", 2), null).image).toBe(img("mini", "p1_02.webp"));
+  });
+
+  it("echo는 consequence 첫 그림, contrast류가 빌릴 때는 마지막 그림", () => {
+    expect(resolveArt(paged, body("echo", "c1.c1a.echo", 1, "c1"), null).image).toBe(img("mini", "c1_c1a_consequence.webp"));
+  });
+
+  it("pages 길이가 페이지 수와 다르면 스키마 오류", async () => {
+    const { validateStory } = await import("../src/story/schema");
+    const bad = JSON.parse(JSON.stringify(fixture));
+    bad.art.pages = { p1: ["p1.webp"] };
+    const r = validateStory(bad);
+    expect(r.ok).toBe(false);
+  });
+});

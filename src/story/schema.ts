@@ -202,6 +202,18 @@ export function validateStory(story: unknown): ValidateResult {
             if (!isObj(v) || !(v.image === null || isStr(v.image))) err("R9_ART", "image는 파일명 또는 null", p);
           }
       }
+      if (art.pages !== undefined) {
+        if (!isObj(art.pages)) err("R9_ART", "art.pages는 객체여야 함", "art.pages");
+        else
+          for (const [id, v] of Object.entries(art.pages)) {
+            const p = `art.pages.${id}`;
+            const count = pages.get(id);
+            if (count === undefined) err("R9_SCENE_ID", `장면 id가 본문 노드 id가 아님: ${id}`, p);
+            else if (!Array.isArray(v) || !v.every(isStr) || v.length !== count) {
+              err("R9_PAGE", `페이지 수(${count})만큼 파일명이 필요`, p);
+            }
+          }
+      }
       if (art.textRight !== undefined && !(Array.isArray(art.textRight) && art.textRight.every(isStr))) {
         err("R9_ART", "art.textRight는 파일명 문자열 배열", "art.textRight");
       }

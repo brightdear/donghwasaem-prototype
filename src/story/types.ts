@@ -127,6 +127,8 @@ export interface StoryArt {
   /** 장면 id → 파일명(public/img/<storyId>/). null이면 그 장면은 그림 없음 */
   scenes?: Record<string, { image: string | null }>;
   motions?: ArtMotion[];
+  /** 장면 id → 페이지별 그림 파일명(페이지 수와 같은 길이). 있으면 페이지마다 그림이 바뀐다 */
+  pages?: Record<string, string[]>;
   /** 글을 오른쪽 위에 놓을 그림 파일명(확장자 제외). 나머지는 왼쪽 위. 그림의 빈 곳에 맞춘다 */
   textRight?: string[];
 }
