@@ -564,17 +564,7 @@
       "c3_c3b_rewind_consequence",
       "end_original"
     ],
-    "motions": [
-      {
-        "scene": "p4",
-        "page": 3,
-        "overlay": "swallow.webp",
-        "motion": "walk_in",
-        "x": 0.6,
-        "y": 0.3,
-        "size": 0.1
-      }
-    ],
+    "motions": [],
     "pages": {
       "p1": [
         "p1.webp",
@@ -751,9 +741,9 @@
       ],
       "p4": [
         "p4.webp",
-        "p4.webp",
-        "p4.webp",
-        "p4.webp"
+        "p4_02.webp",
+        "p4_03.webp",
+        "p4_04.webp"
       ],
       "end.original": [
         "end_original.webp",
