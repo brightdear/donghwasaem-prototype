@@ -189,3 +189,16 @@ body:has(.child.has-scene) { background: #e9dfc9; padding: 0; overflow: hidden; 
 table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
 th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
 th { background: #f1f5f9; }
+
+/* 책장 귀퉁이: 넘길 수 있는 쪽 아래 모서리가 살짝 접혀 보인다(누르는 곳 안내). 누르기는 wrap이 처리 */
+.page-corner {
+  position: absolute;
+  bottom: 0;
+  z-index: 2;
+  width: clamp(44px, 7vw, 84px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  filter: drop-shadow(-2px -2px 3px rgba(60, 40, 10, 0.25));
+}
+.page-corner-next { right: 0; background: linear-gradient(135deg, transparent 50%, #f3e7cf 50%, #fbf5e8 100%); }
+.page-corner-prev { left: 0; background: linear-gradient(225deg, transparent 50%, #f3e7cf 50%, #fbf5e8 100%); filter: drop-shadow(2px -2px 3px rgba(60, 40, 10, 0.25)); }

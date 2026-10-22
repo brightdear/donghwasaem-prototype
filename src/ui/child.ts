@@ -37,29 +37,39 @@ function optionList(
 }
 
 /**
- * 책장 넘기기: 그림 오른쪽 40%를 누르거나 왼쪽으로 쓸면 next. 글·버튼을 누른 것은 제외.
- * wrap은 재렌더에서 유지되므로 리스너를 쌓지 않게 on* 속성에 덮어쓴다. next가 null이면 끈다.
+ * 책장 넘기기(그림이 있는 지면): 아래쪽 절반에서 오른쪽 35%를 누르면 next, 왼쪽 35%를 누르면 prev.
+ * 왼쪽으로 쓸면 next, 오른쪽으로 쓸면 prev. 글·버튼을 누른 것은 제외. null이면 그 방향은 끈다.
+ * wrap은 재렌더에서 유지되므로 리스너를 쌓지 않게 on* 속성에 덮어쓴다.
  */
-function setPageTurn(wrap: HTMLElement, next: (() => void) | null): void {
+function setPageTurn(wrap: HTMLElement, next: (() => void) | null, prev: (() => void) | null = null): void {
+  const on = !!(next || prev);
   let startX: number | null = null;
   let swiped = false;
-  wrap.onpointerdown = next ? (e) => { startX = e.clientX; swiped = false; } : null;
-  wrap.onpointerup = next
+  wrap.onpointerdown = on ? (e) => { startX = e.clientX; swiped = false; } : null;
+  wrap.onpointerup = on
     ? (e) => {
-        if (startX !== null && startX - e.clientX > 60) {
-          swiped = true;
-          next();
-        }
+        const dx = startX === null ? 0 : e.clientX - startX;
         startX = null;
+        if (dx < -60 && next) { swiped = true; next(); }
+        else if (dx > 60 && prev) { swiped = true; prev(); }
       }
     : null;
-  wrap.onclick = next
+  wrap.onclick = on
     ? (e) => {
         if (swiped || (e.target as HTMLElement).closest("button, .page-text")) return;
         const r = wrap.getBoundingClientRect();
-        if (e.clientX > r.left + r.width * 0.6) next();
+        if (e.clientY < r.top + r.height * 0.5) return;
+        if (next && e.clientX > r.left + r.width * 0.65) next();
+        else if (prev && e.clientX < r.left + r.width * 0.35) prev();
       }
     : null;
+}
+
+/** 책장 모서리 표시(접힌 귀퉁이). 넘길 수 있는 방향에만 보인다 */
+function cornerEl(side: "next" | "prev"): HTMLElement {
+  const c = el("div", `page-corner page-corner-${side}`);
+  c.setAttribute("aria-hidden", "true");
+  return c;
 }
 
 /** 불러오기에 실패한 그림 주소(재렌더 때 깜빡이지 않게 다시 시도하지 않는다) */
@@ -225,11 +235,17 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
   }
 
   // BodyView: 한 페이지(문단 1개)만. 페이지 번호는 아이 화면에 표시하지 않는다
-  if (view.nextVisible) setPageTurn(wrap, () => dispatch({ type: "next" }));
   for (const p of view.paragraphs) text.appendChild(el("p", "child-text child-page", p));
-  const actions = el("div", "actions");
-  if (view.nextVisible) {
-    actions.appendChild(button("btn btn-primary", STRINGS.next, () => dispatch({ type: "next" })));
+  const next = view.nextVisible ? () => dispatch({ type: "next" }) : null;
+  const prev = view.page > 1 ? () => dispatch({ type: "prev" }) : null;
+  if (wrap.classList.contains("has-scene")) {
+    // 그림책 지면: 버튼 없이 오른쪽 아래(다음)·왼쪽 아래(이전)를 눌러 넘긴다
+    setPageTurn(wrap, next, prev);
+    if (next) wrap.appendChild(cornerEl("next"));
+    if (prev) wrap.appendChild(cornerEl("prev"));
+    return;
   }
+  const actions = el("div", "actions");
+  if (next) actions.appendChild(button("btn btn-primary", STRINGS.next, next));
   wrap.appendChild(actions);
 }

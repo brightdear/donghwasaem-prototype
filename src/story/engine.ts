@@ -241,6 +241,15 @@ function nextPage(ctx: Ctx, cur: BodyCur, at: number): void {
   render(ctx);
 }
 
+/** 같은 노드의 앞 페이지(노드 첫 페이지면 호출하지 않는다). 다시 읽고 '다음'은 낭독 뒤에 연다 */
+function prevPage(ctx: Ctx, cur: BodyCur, at: number): void {
+  cancelLive(ctx);
+  cur.page -= 1;
+  cur.nextVisible = ctx.s.settings.manualReading;
+  speak(ctx, "passage", "body", cur.paragraphs[cur.page] ?? "", at);
+  render(ctx);
+}
+
 function interactiveBase(s: EngineState, nodeId: string, at: number): InteractiveBase {
   s.screenSeq += 1;
   return { seq: s.screenSeq, nodeId, enteredAt: at, basis: null, replayCount: 0, selected: null };
@@ -530,6 +539,13 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
         break;
       }
       return unchanged;
+    }
+    case "prev": {
+      // 같은 노드 안에서만 뒤로 간다. 노드 첫 페이지(선택 직후 등)에서는 앞 노드로 넘어가지 않는다
+      if (cur.t !== "body" || cur.page === 0) return unchanged;
+      log(ctx, { event_type: "prev_click", at, ...ctxCols(cur, s), detail: { page: cur.page + 1, page_count: cur.paragraphs.length } });
+      prevPage(ctx, cur, at);
+      break;
     }
     case "replay": {
       if (cur.t === "body") {

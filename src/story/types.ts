@@ -193,6 +193,7 @@ export interface EngineSettings {
 /** 모든 action은 at(ms, performance.now() 기준)을 가진다. 시계는 주입. */
 export type Action =
   | { type: "next"; at: number }
+  | { type: "prev"; at: number }
   | { type: "listen"; optionId: string; at: number }
   | { type: "confirm"; optionId: string; at: number }
   | { type: "answerWhy"; optionId: string; at: number }

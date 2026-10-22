@@ -435,6 +435,19 @@ describe("화면 진행 규칙", () => {
     expect(currentView(passBody(r2, 40).state)).toMatchObject({ screen: "choice", nodeId: "c1" });
   });
 
+  it("prev: 같은 노드 앞 페이지로 돌아가 다시 읽고 prev_click 기록, 노드 첫 페이지에서는 무시", () => {
+    const s: EngineSettings = { manualReading: true, confirmMode: "double" };
+    const r0 = init(story, OFF, s, 0);
+    const first = step(r0.state, { type: "prev", at: 1 });
+    expect(first.state).toBe(r0.state);
+    const r1 = step(r0.state, { type: "next", at: 5 });
+    expect(currentView(r1.state)).toMatchObject({ nodeId: "p1", page: 2 });
+    const r2 = step(r1.state, { type: "prev", at: 6 });
+    expect(currentView(r2.state)).toMatchObject({ screen: "passage", nodeId: "p1", page: 1, nextVisible: true });
+    const ev = r2.effects.find((e) => e.type === "log" && e.event.event_type === "prev_click");
+    expect(ev).toMatchObject({ event: { node_id: "p1", detail: { page: 2, page_count: 2 } } });
+  });
+
   it("실험자 낭독 모드: speak 없이 진입 즉시 '다음' 표시·진행", () => {
     const s: EngineSettings = { manualReading: true, confirmMode: "double" };
     const r0 = init(story, OFF, s, 0);

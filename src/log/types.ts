@@ -17,6 +17,7 @@ export type EventType =
   | "choice_confirm"
   | "forced_original" // attempt=3 행에만
   | "next_click" // 모든 본문 화면
+  | "prev_click" // 본문 화면에서 같은 노드의 앞 페이지로
   | "why_answer"
   | "comprehension_answer"
   | "page_hidden"
