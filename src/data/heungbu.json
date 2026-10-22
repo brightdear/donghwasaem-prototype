@@ -564,17 +564,7 @@
       "c3_c3b_rewind_consequence",
       "end_original"
     ],
-    "motions": [
-      {
-        "scene": "p4",
-        "page": 3,
-        "overlay": "swallow.webp",
-        "motion": "walk_in",
-        "x": 0.6,
-        "y": 0.3,
-        "size": 0.1
-      }
-    ],
+    "motions": [],
     "pages": {
       "p1": [
         "p1.webp",
@@ -684,6 +674,16 @@
       "c3.c3a.offNarration": [
         "c3_c3a_offNarration_01.webp"
       ],
+      "c3.c3a.consequence": [
+        "c3_c3a_consequence.webp",
+        "c3_c3a_consequence_02.webp",
+        "c3_c3a_consequence_03.webp",
+        "c3_c3a_consequence_04.webp",
+        "c3_c3a_consequence_04.webp",
+        "c3_c3a_consequence_04.webp",
+        "c3_c3a_consequence_07.webp",
+        "c3_c3a_consequence_07.webp"
+      ],
       "c3.c3b.rewind.consequence": [
         "c3_c3b_rewind_consequence.webp",
         "c3_c3b_rewind_consequence_02.webp"
@@ -717,6 +717,25 @@
       "c3.c3c.altEnding.consequence": [
         "c3_c3c_rewind_consequence.webp",
         "c3_c3c_rewind_consequence_02.webp"
+      ],
+      "p4": [
+        "p4.webp",
+        "p4.webp",
+        "p4.webp",
+        "p4.webp"
+      ],
+      "end.original": [
+        "end_original.webp",
+        "end_original.webp",
+        "end_original.webp",
+        "end_original.webp",
+        "end_original.webp"
+      ],
+      "end.alt": [
+        "end_alt.webp",
+        "end_alt.webp",
+        "end_alt.webp",
+        "end_alt.webp"
       ]
     }
   },
