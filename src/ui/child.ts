@@ -36,6 +36,32 @@ function optionList(
   return list;
 }
 
+/**
+ * 책장 넘기기: 그림 오른쪽 40%를 누르거나 왼쪽으로 쓸면 next. 글·버튼을 누른 것은 제외.
+ * wrap은 재렌더에서 유지되므로 리스너를 쌓지 않게 on* 속성에 덮어쓴다. next가 null이면 끈다.
+ */
+function setPageTurn(wrap: HTMLElement, next: (() => void) | null): void {
+  let startX: number | null = null;
+  let swiped = false;
+  wrap.onpointerdown = next ? (e) => { startX = e.clientX; swiped = false; } : null;
+  wrap.onpointerup = next
+    ? (e) => {
+        if (startX !== null && startX - e.clientX > 60) {
+          swiped = true;
+          next();
+        }
+        startX = null;
+      }
+    : null;
+  wrap.onclick = next
+    ? (e) => {
+        if (swiped || (e.target as HTMLElement).closest("button, .page-text")) return;
+        const r = wrap.getBoundingClientRect();
+        if (e.clientX > r.left + r.width * 0.6) next();
+      }
+    : null;
+}
+
 /** 불러오기에 실패한 그림 주소(재렌더 때 깜빡이지 않게 다시 시도하지 않는다) */
 const failed = new Set<string>();
 
@@ -142,6 +168,7 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
     return;
   }
 
+  setPageTurn(wrap, null);
   // 그림책 지면처럼 글은 그림의 빈 곳에 바로 얹는다. 글을 누르면 다시 읽어 준다('다시 듣기' 버튼 대신)
   if (art?.textSide === "right") wrap.dataset.text = "right";
   else delete wrap.dataset.text;
@@ -198,6 +225,7 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
   }
 
   // BodyView: 한 페이지(문단 1개)만. 페이지 번호는 아이 화면에 표시하지 않는다
+  if (view.nextVisible) setPageTurn(wrap, () => dispatch({ type: "next" }));
   for (const p of view.paragraphs) text.appendChild(el("p", "child-text child-page", p));
   const actions = el("div", "actions");
   if (view.nextVisible) {
