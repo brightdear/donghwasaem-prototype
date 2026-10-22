@@ -689,10 +689,10 @@
         "c3_c3a_consequence_02.webp",
         "c3_c3a_consequence_03.webp",
         "c3_c3a_consequence_04.webp",
-        "c3_c3a_consequence_04.webp",
-        "c3_c3a_consequence_04.webp",
+        "c3_c3a_consequence_05.webp",
+        "c3_c3a_consequence_06.webp",
         "c3_c3a_consequence_07.webp",
-        "c3_c3a_consequence_07.webp"
+        "c3_c3a_consequence_08.webp"
       ],
       "c3.c3b.rewind.consequence": [
         "c3_c3b_rewind_consequence.webp",
@@ -706,6 +706,12 @@
       ],
       "c3.c3b.converge.consequence": [
         "c3_c3b_rewind_consequence.webp"
+      ],
+      "c3.c3b.converge.bridge": [
+        "c3_c3b_converge_bridge_01.webp",
+        "c3_c3b_converge_bridge_02.webp",
+        "c3_c3b_converge_bridge_02.webp",
+        "c3_c3b_converge_bridge_02.webp"
       ],
       "c3.c3b.altEnding.consequence": [
         "c3_c3b_rewind_consequence.webp"
