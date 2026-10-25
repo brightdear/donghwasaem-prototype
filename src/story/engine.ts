@@ -395,6 +395,11 @@ function confirmChoice(ctx: Ctx, cur: ChoiceCur, optionId: string, at: number): 
     const m = o.mismatch![kind];
     q.push(body("consequence", `${kind}.consequence`, m.consequence));
     q.push(body("bridge", `${kind}.bridge`, m.bridge));
+    if (kind === "converge") {
+      // 다리글 뒤에 원작 선택지의 consequence를 이어 읽는다(원작 사건이 모든 경로에서 일어나도록). forced_original은 아님
+      const orig = originalOf(cp);
+      q.push({ t: "body", screen: "consequence", nodeId: `${cp.id}.${orig.id}.consequence`, cpId: cp.id, paragraphs: orig.consequence ?? [], attempt: a });
+    }
   }
   s.queue = q;
   advance(ctx, at);

@@ -177,18 +177,18 @@ const EXPECTED: Record<string, { decisions: string[]; nodes: string[] }> = {
   "converge-why/다른만": {
     decisions: ["c1b", "c2b", "c3b"],
     nodes: [
-      "p1", "c1", "c1.c1b.echo", "c1.c1b.why", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge",
-      "p2", "c2", "c2.c2b.echo", "c2.c2b.why", "c2.c2b.converge.consequence", "c2.c2b.converge.bridge",
-      "p3", "c3", "c3.c3b.echo", "c3.c3b.why", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge",
+      "p1", "c1", "c1.c1b.echo", "c1.c1b.why", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge", "c1.c1a.consequence",
+      "p2", "c2", "c2.c2b.echo", "c2.c2b.why", "c2.c2b.converge.consequence", "c2.c2b.converge.bridge", "c2.c2a.consequence",
+      "p3", "c3", "c3.c3b.echo", "c3.c3b.why", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge", "c3.c3a.consequence",
       "end.original",
     ],
   },
   "converge-why/섞기": {
     decisions: ["c1b", "c2a", "c3b"],
     nodes: [
-      "p1", "c1", "c1.c1b.echo", "c1.c1b.why", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge",
+      "p1", "c1", "c1.c1b.echo", "c1.c1b.why", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge", "c1.c1a.consequence",
       "p2", "c2", "c2.c2a.echo", "c2.c2a.why", "c2.c2a.consequence",
-      "p3", "c3", "c3.c3b.echo", "c3.c3b.why", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge",
+      "p3", "c3", "c3.c3b.echo", "c3.c3b.why", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge", "c3.c3a.consequence",
       "end.original",
     ],
   },
@@ -204,18 +204,18 @@ const EXPECTED: Record<string, { decisions: string[]; nodes: string[] }> = {
   "converge-nowhy/다른만": {
     decisions: ["c1b", "c2c", "c3b"],
     nodes: [
-      "p1", "c1", "c1.c1b.echo", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge",
-      "p2", "c2", "c2.c2c.echo", "c2.c2c.converge.consequence", "c2.c2c.converge.bridge",
-      "p3", "c3", "c3.c3b.echo", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge",
+      "p1", "c1", "c1.c1b.echo", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge", "c1.c1a.consequence",
+      "p2", "c2", "c2.c2c.echo", "c2.c2c.converge.consequence", "c2.c2c.converge.bridge", "c2.c2a.consequence",
+      "p3", "c3", "c3.c3b.echo", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge", "c3.c3a.consequence",
       "end.original",
     ],
   },
   "converge-nowhy/섞기": {
     decisions: ["c1b", "c2a", "c3b"],
     nodes: [
-      "p1", "c1", "c1.c1b.echo", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge",
+      "p1", "c1", "c1.c1b.echo", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge", "c1.c1a.consequence",
       "p2", "c2", "c2.c2a.echo", "c2.c2a.consequence",
-      "p3", "c3", "c3.c3b.echo", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge",
+      "p3", "c3", "c3.c3b.echo", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge", "c3.c3a.consequence",
       "end.original",
     ],
   },
@@ -319,13 +319,29 @@ describe("altEnding 결말 선택(OQ-2)", () => {
   });
 });
 
+it("converge: 다리글 뒤 원작 consequence를 읽고, forced_original은 없다", () => {
+  const r = run(C("converge", false), ["c1b", "c2a", "c3a"]);
+  const i = r.nodes.indexOf("c1.c1b.converge.bridge");
+  expect(r.nodes[i + 1]).toBe("c1.c1a.consequence");
+  expect(r.nodes[i + 2]).toBe("p2");
+  expect(r.logs.filter((e) => e.event_type === "forced_original")).toEqual([]);
+  const conseq = r.logs.find((e) => e.event_type === "screen_enter" && e.node_id === "c1.c1a.consequence")!;
+  expect(conseq).toMatchObject({ screen: "consequence", choice_point_id: "c1", attempt: 1 });
+});
+it("altEnding은 종전대로 bridge 뒤 바로 척추", () => {
+  const r = run(C("altEnding", false), ["c1b", "c2a", "c3a"]);
+  const i = r.nodes.indexOf("c1.c1b.altEnding.bridge");
+  expect(r.nodes[i + 1]).toBe("p2");
+});
+
 describe("converge·altEnding 낭독 내용", () => {
   const origC1 = story.choicePoints[0]!.options[0]!.consequence!.join(" ");
   for (const kind of ["converge", "altEnding"] as const) {
-    it(`${kind}: 다른 선택이면 원작 consequence 미낭독, bridge 낭독`, () => {
+    it(`${kind}: 다른 선택이면 원작 consequence ${kind === "converge" ? "낭독" : "미낭독"}, bridge 낭독`, () => {
       const r = run(C(kind, true), ["c1b", "c2a", "c3a"]);
       const texts = r.speaks.map((s) => s.text);
-      expect(texts.join(" ")).not.toContain(origC1);
+      if (kind === "converge") expect(texts.join(" ")).toContain(origC1);
+      else expect(texts.join(" ")).not.toContain(origC1);
       const m = story.choicePoints[0]!.options[1]!.mismatch![kind];
       // 문단 1개 = 페이지 1개 = 낭독 1개
       for (const p of [...m.bridge, ...m.consequence]) expect(texts).toContain(p);

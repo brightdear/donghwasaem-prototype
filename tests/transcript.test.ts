@@ -42,6 +42,17 @@ for (const story of stories) {
           }
         });
 
+        if (c.mismatch === "converge") {
+          it("다른 선택 경로의 대본에 원작 consequence 첫 문단이 들어 있다", () => {
+            const cp = story.choicePoints[0]!;
+            const orig = cp.options.find((o) => o.matchesOriginal)!;
+            const other = cp.options.find((o) => !o.matchesOriginal)!;
+            const rest = story.choicePoints.slice(1).map((x) => [x.options.find((o) => o.matchesOriginal)!.id]);
+            const tr = renderTranscript(story, c, [[other.id], ...rest]);
+            expect(tr.storyLines.map((l) => l.text).join("\n")).toContain(orig.consequence![0]!);
+          });
+        }
+
         if (c.mismatch === "rewind") {
           it('"다시 골라" 횟수 = 1회째 다른 선택이 있었던 선택 지점 수(1회째 contrast 뒤에만)', () => {
             for (const p of paths) {
