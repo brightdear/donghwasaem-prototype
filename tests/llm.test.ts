@@ -11,8 +11,9 @@ const input: ReportInput = {
   ],
   comprehension: [{ type: "explicit", result: "most" }],
   parentPrompts: ["무엇이 기억나?", "왜 그랬을까?"],
+  asks: [{ scene: "다친 제비를 본 장면", character: "제비", question: "왜 못 날아?", via: "voice" }],
 };
-const good = JSON.stringify({ choices: "모른 척을 골랐다가 다시 골랐어요.", comprehension: "대부분 맞혔어요.", prompts: ["무엇이 기억나?", "왜 그랬을까?"] });
+const good = JSON.stringify({ curiosity: "제비에게 왜 못 나는지 물어봤어요.", choices: "모른 척을 골랐다가 다시 골랐어요.", comprehension: "대부분 맞혔어요.", prompts: ["무엇이 기억나?", "왜 그랬을까?"] });
 
 function mock(create: ReturnType<typeof vi.fn>) {
   return { messages: { create } } as unknown as Anthropic;
@@ -49,6 +50,29 @@ describe("buildRequest", () => {
   });
 });
 
+describe("curiosity 규칙", () => {
+  it("AC-16: 요청 본문에 said·인식 글이 없다", () => {
+    const s = JSON.stringify(buildRequest(input));
+    expect(s).not.toContain("said");
+    expect(s).not.toContain("우리 엄마");
+  });
+  it("generateReport는 said를 보내지 않고 템플릿 대체에만 쓴다", async () => {
+    const create = vi.fn().mockResolvedValue(textRes("{not json"));
+    const r = await generateReport(input, "sk-ant-test", { client: mock(create), said: ["우리 엄마 김영희"] });
+    expect(JSON.stringify(create.mock.calls[0]![0])).not.toContain("김영희");
+    expect(r.source).toBe("template");
+    expect(r.text.curiosity).toContain("김영희");
+  });
+  it("curiosity 누락 → parse_error 템플릿", async () => {
+    const create = vi.fn().mockResolvedValue(textRes(JSON.stringify({ choices: "a", comprehension: "b", prompts: ["x", "y"] })));
+    expect((await gen(create)).fallbackReason).toBe("parse_error");
+  });
+  it("curiosity에 금지어 → filtered", async () => {
+    const create = vi.fn().mockResolvedValue(textRes(JSON.stringify({ ...JSON.parse(good), curiosity: "추론 점수가 올랐어요." })));
+    expect((await gen(create)).fallbackReason).toBe("filtered");
+  });
+});
+
 describe("generateReport", () => {
   it("키 없음 → 호출 안 함", async () => {
     const create = vi.fn();
@@ -73,7 +97,7 @@ describe("generateReport", () => {
     expect((await gen(vi.fn().mockResolvedValue(textRes(one)))).fallbackReason).toBe("parse_error");
   });
   it("금지어 → filtered", async () => {
-    const bad = JSON.stringify({ choices: "a", comprehension: "이해력이 향상됐어요", prompts: ["가", "나"] });
+    const bad = JSON.stringify({ curiosity: "c", choices: "a", comprehension: "이해력이 향상됐어요", prompts: ["가", "나"] });
     const r = await gen(vi.fn().mockResolvedValue(textRes(bad)));
     expect(r).toMatchObject({ source: "template", fallbackReason: "filtered" });
   });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categorize, summarize } from "../src/report/summarize";
+import { categorize, saidByAsk, summarize } from "../src/report/summarize";
 import type { LogEvent, SessionRecord } from "../src/log/types";
 import type { Story } from "../src/story/types";
 
@@ -17,6 +17,22 @@ const story = {
         { id: "c1b", label: "모른 척", matchesOriginal: false, echo: "", why: [{ id: "c1b-w1", text: "귀찮아서", reasonType: "other" }] },
         { id: "c1c", label: "도망", matchesOriginal: false, echo: "", why: [] },
       ],
+      ask: {
+        voice: true,
+        sceneLabel: "다친 제비를 본 장면",
+        characters: [
+          {
+            id: "swallow",
+            name: "제비",
+            questions: [
+              { id: "q1", text: "왜 못 날아?", keywords: ["못 날"], answer: ["다쳤어."] },
+              { id: "q2", text: "어디가 아파?", keywords: ["아파"], answer: ["다리."] },
+            ],
+            unmatched: "u",
+            unmatchedFinal: "f",
+          },
+        ],
+      },
     },
   ],
   endings: { original: { paragraphs: [] }, alt: { paragraphs: [] } },
@@ -78,6 +94,20 @@ describe("summarize", () => {
       { type: "sequence", result: "some" },
     ]);
   });
+  it("ask_confirm → asks(순서·via), saidByAsk는 음성 글만", () => {
+    const r = rec([
+      ev({ event_type: "ask_confirm", choice_point_id: "c1", question_id: "c1.ask.swallow.q1", option_id: "swallow.q1", detail: { via: "voice", transcript: "제비야 왜 못 날아" } }),
+      ev({ event_type: "ask_repeat", choice_point_id: "c1", question_id: "c1.ask.swallow.q1", option_id: "swallow.q1", detail: { via: "voice", transcript: "왜 못 날아" } }),
+      ev({ event_type: "ask_confirm", choice_point_id: "c1", question_id: "c1.ask.swallow.q2", option_id: "swallow.q2", detail: { via: "card" } }),
+      ev({ event_type: "ask_confirm", choice_point_id: "c1", question_id: "c1.ask.swallow.q9", option_id: "swallow.q9", detail: { via: "card" } }),
+    ]);
+    expect(summarize(r, story).asks).toEqual([
+      { scene: "다친 제비를 본 장면", character: "제비", question: "왜 못 날아?", via: "voice" },
+      { scene: "다친 제비를 본 장면", character: "제비", question: "어디가 아파?", via: "card" },
+    ]);
+    expect(saidByAsk(r, story)).toEqual(["제비야 왜 못 날아", undefined]);
+  });
+  it("ask 없는 세션은 asks []", () => expect(summarize(rec([]), story).asks).toEqual([]));
   it("범주 경계값", () => {
     expect(categorize(2, 4)).toBe("some");
     expect(categorize(3, 4)).toBe("most");

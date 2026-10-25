@@ -19,15 +19,24 @@ export interface ReportChoice {
   reasonText?: string; // 첫 시도 why 보기 문장
 }
 
+export interface ReportAsk {
+  scene: string; // ask.sceneLabel ?? 선택 지점 질문
+  character: string;
+  question: string;
+  via: "card" | "voice";
+}
+
 export interface ReportInput {
   storyTitle: string;
   branching: boolean;
   choices: ReportChoice[]; // 분기 off면 []
   comprehension: { type: QuestionType; result: ComprehensionResult }[];
   parentPrompts: string[];
+  asks: ReportAsk[]; // ask_confirm 순서. 인식 글(transcript)은 여기에 없다(AC-16)
 }
 
 export interface ReportText {
+  curiosity: string; // 오늘 궁금해한 것
   choices: string; // 아이의 선택 요약 (원작 비교)
   comprehension: string; // 유형별 결과를 문장으로
   prompts: string[]; // '오늘 이렇게 물어보세요' 2~3개

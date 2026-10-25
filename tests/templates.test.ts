@@ -37,12 +37,26 @@ function inputs(): ReportInput[] {
             { type: "sequence", result: r },
           ],
           parentPrompts: prompts,
+          asks: [],
         });
       }
     }
   }
   return out;
 }
+
+describe("curiosity", () => {
+  const base: ReportInput = { storyTitle: "t", branching: true, choices: [], comprehension: [], parentPrompts: ["a", "b"], asks: [] };
+  it("없으면 중립 문장", () => expect(templateReport(base).curiosity).toBe("오늘은 인물에게 따로 물어보지 않고 이야기를 끝까지 들었어요."));
+  it("카드·음성(said) 문장", () => {
+    const t = templateReport({ ...base, asks: [
+      { scene: "다친 제비를 본 장면", character: "제비", question: "왜 못 날아?", via: "voice" },
+      { scene: "다친 제비를 본 장면", character: "흥부", question: "제비 무서워?", via: "card" },
+    ] }, ["제비야 왜 못 날아", undefined]);
+    expect(t.curiosity).toBe("다친 제비를 본 장면에서 제비에게 「왜 못 날아?」 하고 물어봤어요. 직접 말로 「제비야 왜 못 날아」라고 물었어요.\n다친 제비를 본 장면에서 흥부에게 「제비 무서워?」 하고 물어봤어요.");
+    expect(containsForbidden(t.curiosity).hit).toBe(false);
+  });
+});
 
 describe("templateReport", () => {
   it("모든 조합 출력이 filter 통과, 숫자·이모지 없음, prompts 2~3개", () => {

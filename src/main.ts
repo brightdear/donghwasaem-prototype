@@ -15,7 +15,7 @@ import { downloadText, exportFilename } from "./log/export";
 import { DEFAULT_SETTINGS, STORAGE_KEYS, type SessionMeta, type Settings } from "./log/types";
 import { parseSettings } from "./log/settings";
 import { createTts, type Tts, type TtsEvent } from "./tts";
-import { summarize } from "./report/summarize";
+import { saidByAsk, summarize } from "./report/summarize";
 import { generateReport } from "./report/llm";
 import { createRunner, lateEvent, ttsEventToAction, type Runner } from "./ui/runner";
 import { createAsr, isAsrSupported } from "./asr";
@@ -256,7 +256,8 @@ async function boot(root: HTMLElement): Promise<void> {
           showExperimenter();
           return;
         }
-        const result = await generateReport(summarize(record, story), settings.apiKey);
+        const input = summarize(record, story);
+        const result = await generateReport(input, settings.apiKey, { said: saidByAsk(record, story) });
         if (stale()) return;
         late({
           event_type: "report_source",
