@@ -9,7 +9,7 @@
  * 그 뒤 같은 그림이 보이는 동안(다음 페이지·재사용 화면·선택·질문 화면)은 animate=false로 마지막 위치에 남는다.
  * fly_away는 화면 밖으로 나가므로 재생 뒤에는 남기지 않는다. 그림이 바뀌면 남은 오버레이도 사라진다.
  */
-import type { ArtMotion, Conditions, Story, View } from "../story/types";
+import type { ArtMotion, AskQuestion, Conditions, Story, View } from "../story/types";
 
 export interface ResolvedOverlay {
   src: string;
@@ -69,6 +69,14 @@ function passageBefore(story: Story, cpId: string): string | null {
     if (n.type === "passage") return n.id;
   }
   return null;
+}
+
+/** 묻기 대답 노드 id(cp.ask.char.q)에서 질문을 찾는다. 모르면 null */
+function questionOf(story: Story, nodeId: string): AskQuestion | null {
+  const [cpId, askId, charId, qId] = sceneIdOf(nodeId).split(".");
+  if (!cpId || askId !== "ask" || !charId || !qId) return null;
+  const block = story.choicePoints.find((c) => c.id === cpId)?.ask;
+  return block?.characters.find((c) => c.id === charId)?.questions.find((q) => q.id === qId) ?? null;
 }
 
 /** 재사용 화면이 빌려 올 consequence 장면 id. 모르면 null */
@@ -151,12 +159,19 @@ function resolveImage(
   conditions?: Conditions,
 ): ResolvedArt {
   if (view.screen === "parent_handoff") return NO_ART;
-  if (view.screen === "choice" || view.screen === "why" || view.screen === "comprehension" || view.screen === "ask") {
+  const sceneId = sceneIdOf(view.nodeId);
+  // 묻기 대답: art.pages·art.scenes에 그 노드가 명시돼 있으면 아래 기존 규칙, 아니면 질문의 단서 그림(clue)을 쓴다
+  const askAnswer = view.screen === "askAnswer" && !story.art?.pages?.[sceneId] && !story.art?.scenes?.[sceneId];
+  if (askAnswer) {
+    const clue = questionOf(story, view.nodeId)?.clue;
+    if (clue) return { image: `${base()}img/${story.id}/${clue}.webp`, fallback: lastArt?.image ?? null };
+  }
+  // 선택·묻기 화면과 clue 없는 대답은 직전 그림을 그대로 유지한다
+  if (view.screen === "choice" || view.screen === "why" || view.screen === "comprehension" || view.screen === "ask" || askAnswer) {
     if (!lastArt) return NO_ART;
     const still = carried(lastArt.image, lastArt).map((o) => ({ ...o, animate: false }));
     return withOverlays({ image: lastArt.image, fallback: lastArt.fallback ?? null }, still);
   }
-  const sceneId = sceneIdOf(view.nodeId);
   const withOverlay = (a: ResolvedArt): ResolvedArt =>
     withOverlays(a, bodyOverlays(story, sceneId, view.page, a.image, lastArt));
 
