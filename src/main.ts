@@ -164,7 +164,7 @@ async function boot(root: HTMLElement): Promise<void> {
       const r = createRunner({
         story,
         conditions: cfg.conditions,
-        engineSettings: { manualReading: cfg.manualReading, confirmMode: cfg.confirmMode },
+        engineSettings: { manualReading: cfg.manualReading, confirmMode: cfg.confirmMode, askLayer: false, voiceAsk: false },
         meta: m,
         store: runnerStore,
         tts: cfg.manualReading ? null : tts,

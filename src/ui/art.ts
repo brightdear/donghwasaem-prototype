@@ -151,7 +151,7 @@ function resolveImage(
   conditions?: Conditions,
 ): ResolvedArt {
   if (view.screen === "parent_handoff") return NO_ART;
-  if (view.screen === "choice" || view.screen === "why" || view.screen === "comprehension") {
+  if (view.screen === "choice" || view.screen === "why" || view.screen === "comprehension" || view.screen === "ask") {
     if (!lastArt) return NO_ART;
     const still = carried(lastArt.image, lastArt).map((o) => ({ ...o, animate: false }));
     return withOverlays({ image: lastArt.image, fallback: lastArt.fallback ?? null }, still);

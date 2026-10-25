@@ -7,7 +7,7 @@ import type { EngineLogEvent } from "../src/log/types";
 import { STRINGS } from "../src/ui/strings";
 
 const story = fixture as unknown as Story;
-const AUTO: EngineSettings = { manualReading: false, confirmMode: "double" };
+const AUTO: EngineSettings = { manualReading: false, confirmMode: "double", askLayer: false, voiceAsk: false };
 
 const OFF: Conditions = { branching: false, mismatch: "na", askWhy: "na" };
 const C = (mismatch: "rewind" | "converge" | "altEnding", askWhy: boolean): Conditions => ({ branching: true, mismatch, askWhy });
@@ -452,7 +452,7 @@ describe("화면 진행 규칙", () => {
   });
 
   it("prev: 같은 노드 앞 페이지로 돌아가 다시 읽고 prev_click 기록, 노드 첫 페이지에서는 무시", () => {
-    const s: EngineSettings = { manualReading: true, confirmMode: "double" };
+    const s: EngineSettings = { manualReading: true, confirmMode: "double", askLayer: false, voiceAsk: false };
     const r0 = init(story, OFF, s, 0);
     const first = step(r0.state, { type: "prev", at: 1 });
     expect(first.state).toBe(r0.state);
@@ -465,7 +465,7 @@ describe("화면 진행 규칙", () => {
   });
 
   it("실험자 낭독 모드: speak 없이 진입 즉시 '다음' 표시·진행", () => {
-    const s: EngineSettings = { manualReading: true, confirmMode: "double" };
+    const s: EngineSettings = { manualReading: true, confirmMode: "double", askLayer: false, voiceAsk: false };
     const r0 = init(story, OFF, s, 0);
     expect(r0.effects.some((e) => e.type === "speak")).toBe(false);
     expect(currentView(r0.state)).toMatchObject({ nextVisible: true });
@@ -513,7 +513,7 @@ describe("화면 진행 규칙", () => {
   });
 
   it("confirmMode single: 첫 탭이 확정", () => {
-    let r = toChoice(C("converge", false), { manualReading: false, confirmMode: "single" });
+    let r = toChoice(C("converge", false), { manualReading: false, confirmMode: "single", askLayer: false, voiceAsk: false });
     r = step(r.state, { type: "listen", optionId: "c1a", at: 200 });
     expect(currentView(r.state)).toMatchObject({ screen: "echo", nodeId: "c1.c1a.echo" });
   });
@@ -778,7 +778,7 @@ describe("페이지 단위 본문(문단 1개 = 화면 1페이지)", () => {
   });
 
   it("실험자 낭독 모드: 페이지마다 speak 없이 즉시 '다음'", () => {
-    let r = init(story3, OFF, { manualReading: true, confirmMode: "double" }, 0);
+    let r = init(story3, OFF, { manualReading: true, confirmMode: "double", askLayer: false, voiceAsk: false }, 0);
     for (let i = 0; i < 3; i++) {
       expect(speaksOf(r.effects)).toEqual([]);
       expect(currentView(r.state)).toMatchObject({ screen: "passage", page: i + 1, pageCount: 3, nextVisible: true });

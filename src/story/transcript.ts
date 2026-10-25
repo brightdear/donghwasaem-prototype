@@ -96,7 +96,7 @@ export function renderTranscript(story: Story, conditions: Conditions, choicesPe
   const nodeIds: string[] = [];
   let t = 0;
 
-  let r = init(story, conditions, { manualReading: false, confirmMode: "double" }, t);
+  let r = init(story, conditions, { manualReading: false, confirmMode: "double", askLayer: false, voiceAsk: false }, t);
   let state: EngineState = r.state;
 
   const absorb = (effects: Effect[]) => {

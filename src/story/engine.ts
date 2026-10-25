@@ -4,6 +4,8 @@
  */
 import type {
   Action,
+  AskBlock,
+  AskQuestion,
   BodyScreen,
   ChoiceOption,
   ChoicePoint,
@@ -72,11 +74,17 @@ interface CompCur extends InteractiveBase {
   feedback: string | null;
   nextVisible: boolean;
 }
+interface AskCur extends InteractiveBase {
+  t: "ask";
+  cpId: string;
+  selectedCharacterId: string | null;
+  listening: boolean;
+}
 interface HandoffCur {
   t: "parent_handoff";
   seq: number;
 }
-type Cur = BodyCur | ChoiceCur | WhyCur | CompCur | HandoffCur;
+type Cur = BodyCur | ChoiceCur | WhyCur | CompCur | AskCur | HandoffCur;
 
 type Pending =
   | {
@@ -89,7 +97,8 @@ type Pending =
       forcedOptionId?: string;
     }
   | { t: "why"; cpId: string; optionId: string; attempt: number; nodeId: string }
-  | { t: "choice"; cpId: string; attempt: number };
+  | { t: "choice"; cpId: string; attempt: number }
+  | { t: "ask"; cpId: string };
 
 export interface EngineState {
   story: Story;
@@ -104,6 +113,10 @@ export interface EngineState {
   /** 마지막으로 발급한 utteranceId. 화면 상태(nextVisible·반응시간 기준점)는 이 발화의 ttsDone만 바꾼다 */
   lastUtt: string | null;
   mismatchCount: number;
+  /** 묻기 층: cpId → 이미 한 질문(`${characterId}.${questionId}`). 첫 진입 시 []로 생성 */
+  asked: Record<string, string[]>;
+  /** 묻기 층: cpId → 음성 실패 횟수(Task 6) */
+  voiceFails: Record<string, number>;
 }
 
 interface Ctx {
@@ -128,6 +141,24 @@ function question(s: EngineState, i: number): ComprehensionQuestion {
   if (!q) throw new Error(`이해 질문 없음: ${i}`);
   return q;
 }
+function askOf(s: EngineState, cpId: string): AskBlock {
+  const ask = cpById(s.story, cpId).ask;
+  if (!ask) throw new Error(`묻기 블록 없음: ${cpId}`);
+  return ask;
+}
+const introOf = (ask: AskBlock): string => ask.intro ?? STRINGS.askIntroDefault;
+/** `${characterId}.${questionId}` → 질문 (없으면 null) */
+function askQuestion(ask: AskBlock, key: string): { characterId: string; q: AskQuestion } | null {
+  const dot = key.indexOf(".");
+  if (dot < 0) return null;
+  const characterId = key.slice(0, dot);
+  const qid = key.slice(dot + 1);
+  const q = ask.characters.find((c) => c.id === characterId)?.questions.find((x) => x.id === qid);
+  return q ? { characterId, q } : null;
+}
+function asksLeft(s: EngineState, cpId: string): number {
+  return (askOf(s, cpId).maxAsks ?? 2) - (s.asked[cpId]?.length ?? 0);
+}
 const isRewind = (s: EngineState) => s.conditions.branching && s.conditions.mismatch === "rewind";
 
 function screenOf(cur: Cur): Screen {
@@ -138,7 +169,7 @@ function nodeIdOf(cur: Cur): string | undefined {
 }
 function cpIdOf(cur: Cur): string | null {
   if (cur.t === "body") return cur.cpId;
-  if (cur.t === "choice" || cur.t === "why") return cur.cpId;
+  if (cur.t === "choice" || cur.t === "why" || cur.t === "ask") return cur.cpId;
   return null;
 }
 
@@ -263,6 +294,13 @@ function enterChoice(ctx: Ctx, cpId: string, attempt: number, at: number): void 
   render(ctx);
 }
 
+function enterAsk(ctx: Ctx, cpId: string, first: boolean, at: number): void {
+  const { s } = ctx;
+  beginScreen(ctx, { t: "ask", cpId, selectedCharacterId: null, listening: false, ...interactiveBase(s, `${cpId}.ask`, at) }, at);
+  if (first) speak(ctx, "prompt", "prompt", introOf(askOf(s, cpId)), at);
+  render(ctx);
+}
+
 function enterWhy(ctx: Ctx, p: Extract<Pending, { t: "why" }>, at: number): void {
   const { s } = ctx;
   beginScreen(
@@ -296,7 +334,10 @@ function enterHandoff(ctx: Ctx, at: number): void {
 function enterPending(ctx: Ctx, p: Pending, at: number): void {
   if (p.t === "body") enterBody(ctx, p, at);
   else if (p.t === "why") enterWhy(ctx, p, at);
-  else enterChoice(ctx, p.cpId, p.attempt, at);
+  else if (p.t === "ask") {
+    if (asksLeft(ctx.s, p.cpId) > 0) enterAsk(ctx, p.cpId, false, at);
+    else enterChoiceNode(ctx, cpById(ctx.s.story, p.cpId), at);
+  } else enterChoice(ctx, p.cpId, p.attempt, at);
 }
 
 function enterSpine(ctx: Ctx, at: number): void {
@@ -312,6 +353,16 @@ function enterSpine(ctx: Ctx, at: number): void {
     return enterBody(ctx, { t: "body", screen: "ending", nodeId: alt ? "end.alt" : "end.original", cpId: null, paragraphs, attempt: null }, at);
   }
   const cp = cpById(s.story, node.id);
+  if (s.settings.askLayer && cp.ask && s.asked[cp.id] === undefined) {
+    s.asked[cp.id] = [];
+    return enterAsk(ctx, cp.id, true, at);
+  }
+  enterChoiceNode(ctx, cp, at);
+}
+
+/** 선택 노드 본 진입: 분기 off면 원작 서술 큐, on이면 선택 화면 */
+function enterChoiceNode(ctx: Ctx, cp: ChoicePoint, at: number): void {
+  const { s } = ctx;
   if (!s.conditions.branching) {
     const o = originalOf(cp);
     const base = `${cp.id}.${o.id}`;
@@ -405,6 +456,33 @@ function confirmChoice(ctx: Ctx, cur: ChoiceCur, optionId: string, at: number): 
   advance(ctx, at);
 }
 
+/** 묻기 확정: 대답 화면 → 묻기 화면 복귀(또는 선택) */
+function confirmAsk(ctx: Ctx, cur: AskCur, optionId: string, at: number, via: "card" | "voice", transcript?: string): void {
+  const { s } = ctx;
+  const found = askQuestion(askOf(s, cur.cpId), optionId);
+  const done = s.asked[cur.cpId] ?? [];
+  if (!found || done.includes(optionId)) return;
+  const nodeId = `${cur.cpId}.ask.${found.characterId}.${found.q.id}`;
+  const rt = computeRt(cur.basis, cur.enteredAt, at);
+  log(ctx, {
+    event_type: "ask_confirm",
+    at,
+    ...ctxCols(cur, s),
+    question_id: nodeId,
+    option_id: optionId,
+    rt_ms: rt.rt_ms,
+    rt_basis: rt.rt_basis,
+    replay_count: cur.replayCount,
+    detail: { ...(rt.detail ?? {}), via, ...(transcript !== undefined ? { transcript } : {}) },
+  });
+  s.asked[cur.cpId] = [...done, optionId];
+  s.queue = [
+    { t: "body", screen: "askAnswer", nodeId, cpId: cur.cpId, paragraphs: found.q.answer, attempt: null },
+    { t: "ask", cpId: cur.cpId },
+  ];
+  advance(ctx, at);
+}
+
 function answerWhy(ctx: Ctx, cur: WhyCur, optionId: string, at: number): void {
   const { s } = ctx;
   const o = cpById(s.story, cur.cpId).options.find((x) => x.id === cur.optionId);
@@ -451,13 +529,15 @@ function answerQuestion(ctx: Ctx, cur: CompCur, optionId: string, at: number): v
 }
 
 /** 화면 종류별 확정 */
-function confirmOnScreen(ctx: Ctx, cur: ChoiceCur | WhyCur | CompCur, optionId: string, at: number): void {
+function confirmOnScreen(ctx: Ctx, cur: ChoiceCur | WhyCur | CompCur | AskCur, optionId: string, at: number): void {
   if (cur.t === "choice") confirmChoice(ctx, cur, optionId, at);
+  else if (cur.t === "ask") confirmAsk(ctx, cur, optionId, at, "card");
   else if (cur.t === "why") answerWhy(ctx, cur, optionId, at);
   else answerQuestion(ctx, cur, optionId, at);
 }
 
-function optionText(s: EngineState, cur: ChoiceCur | WhyCur | CompCur, optionId: string): string | null {
+function optionText(s: EngineState, cur: ChoiceCur | WhyCur | CompCur | AskCur, optionId: string): string | null {
+  if (cur.t === "ask") return askQuestion(askOf(s, cur.cpId), optionId)?.q.text ?? null;
   if (cur.t === "choice") return cpById(s.story, cur.cpId).options.find((o) => o.id === optionId)?.label ?? null;
   if (cur.t === "why") {
     const o = cpById(s.story, cur.cpId).options.find((x) => x.id === cur.optionId);
@@ -482,6 +562,8 @@ export function init(story: Story, conditions: Conditions, settings: EngineSetti
     live: {},
     lastUtt: null,
     mismatchCount: 0,
+    asked: {},
+    voiceFails: {},
   };
   const ctx: Ctx = { s, fx: [] };
   enterSpine(ctx, at);
@@ -493,7 +575,15 @@ export function isFinished(state: EngineState): boolean {
 }
 
 export function step(state: EngineState, action: Action): StepResult<EngineState> {
-  const s: EngineState = { ...state, queue: [...state.queue], live: { ...state.live }, cur: { ...state.cur } };
+  const s: EngineState = {
+    ...state,
+    queue: [...state.queue],
+    live: { ...state.live },
+    cur: { ...state.cur },
+    // 값 배열은 수정할 때 새 배열로 바꾼다
+    asked: { ...state.asked },
+    voiceFails: { ...state.voiceFails },
+  };
   const ctx: Ctx = { s, fx: [] };
   const at = action.at;
   const cur = s.cur;
@@ -520,7 +610,7 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
     } else if (cur.t === "comprehension" && u.role === "feedback" && !cur.nextVisible) {
       cur.nextVisible = true;
       render(ctx);
-    } else if ((cur.t === "choice" || cur.t === "why" || cur.t === "comprehension") && (u.role === "prompt" || u.role === "replay_prompt")) {
+    } else if ((cur.t === "choice" || cur.t === "why" || cur.t === "comprehension" || cur.t === "ask") && (u.role === "prompt" || u.role === "replay_prompt")) {
       cur.basis = updateBasis(cur.basis, { kind: u.kind, isReplay: u.role === "replay_prompt" }, action.outcome, at);
     }
     return { state: s, effects: ctx.fx };
@@ -571,7 +661,9 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
             ? cpById(s.story, cur.cpId).prompt
             : cur.t === "why"
               ? STRINGS.whyPrompt
-              : question(s, cur.qIndex).prompt;
+              : cur.t === "ask"
+                ? introOf(askOf(s, cur.cpId))
+                : question(s, cur.qIndex).prompt;
         speak(ctx, "prompt", "replay_prompt", prompt, at);
       }
       break;
@@ -581,22 +673,44 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
       if (cur.t === "comprehension" && cur.feedback !== null) return unchanged;
       const text = optionText(s, cur, action.optionId);
       if (text === null) return unchanged;
+      if (cur.t === "ask" && (s.asked[cur.cpId] ?? []).includes(action.optionId)) return unchanged;
       if (s.settings.confirmMode === "single" || cur.selected === action.optionId) {
         confirmOnScreen(ctx, cur, action.optionId, at);
         break;
       }
       cur.selected = action.optionId;
-      log(ctx, { event_type: "option_listen", at, ...ctxCols(cur, s), option_id: action.optionId, replay_count: cur.replayCount });
+      log(ctx, { event_type: cur.t === "ask" ? "ask_listen" : "option_listen", at, ...ctxCols(cur, s), option_id: action.optionId, replay_count: cur.replayCount });
       cancelLive(ctx);
       speak(ctx, "option", "option", text, at);
       render(ctx);
       break;
     }
     case "confirm": {
-      if (cur.t !== "choice") return unchanged;
-      confirmChoice(ctx, cur, action.optionId, at);
+      if (cur.t === "ask") confirmAsk(ctx, cur, action.optionId, at, "card");
+      else if (cur.t === "choice") confirmChoice(ctx, cur, action.optionId, at);
+      else return unchanged;
       break;
     }
+    case "askCharacter": {
+      if (cur.t !== "ask" || cur.selectedCharacterId === action.characterId) return unchanged;
+      if (!askOf(s, cur.cpId).characters.some((c) => c.id === action.characterId)) return unchanged;
+      cur.selectedCharacterId = action.characterId;
+      cur.selected = null;
+      log(ctx, { event_type: "ask_character", at, ...ctxCols(cur, s), option_id: action.characterId });
+      render(ctx);
+      break;
+    }
+    case "askSkip": {
+      if (cur.t !== "ask") return unchanged;
+      log(ctx, { event_type: "ask_skip", at, ...ctxCols(cur, s), detail: { asked: (s.asked[cur.cpId] ?? []).length } });
+      enterChoiceNode(ctx, cpById(s.story, cur.cpId), at);
+      break;
+    }
+    case "voiceStart":
+    case "voiceResult":
+    case "voiceFail":
+      // 음성 경로는 Task 6
+      return unchanged;
     case "answerWhy": {
       if (cur.t !== "why") return unchanged;
       answerWhy(ctx, cur, action.optionId, at);
@@ -661,6 +775,28 @@ export function currentView(state: EngineState): View {
         selectedOptionId: cur.selected,
         feedback: cur.feedback,
         nextVisible: cur.nextVisible,
+      };
+    }
+    case "ask": {
+      const ask = askOf(state, cur.cpId);
+      const done = state.asked[cur.cpId] ?? [];
+      const ch = ask.characters.find((c) => c.id === cur.selectedCharacterId);
+      return {
+        screen: "ask",
+        nodeId: cur.nodeId,
+        choicePointId: cur.cpId,
+        storyId: state.story.id,
+        prompt: introOf(ask),
+        characters: ask.characters.map((c) => ({ id: c.id, name: c.name, ...(c.portrait !== undefined ? { portrait: c.portrait } : {}) })),
+        selectedCharacterId: cur.selectedCharacterId,
+        questions: (ch?.questions ?? []).map((q) => {
+          const id = `${ch!.id}.${q.id}`;
+          return { id, text: q.text, asked: done.includes(id) };
+        }),
+        selectedQuestionId: cur.selected,
+        asksLeft: asksLeft(state, cur.cpId),
+        voice: !state.settings.voiceAsk || !ask.voice ? "hidden" : "idle",
+        voiceFails: state.voiceFails[cur.cpId] ?? 0,
       };
     }
     case "parent_handoff":

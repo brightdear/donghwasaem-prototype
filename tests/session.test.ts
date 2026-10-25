@@ -69,7 +69,7 @@ async function runSession(conditions: Conditions, script: Script, epoch: number)
   const runner: Runner = createRunner({
     story,
     conditions,
-    engineSettings: { manualReading: false, confirmMode: "double" },
+    engineSettings: { manualReading: false, confirmMode: "double", askLayer: false, voiceAsk: false },
     meta,
     store,
     tts,
@@ -115,6 +115,9 @@ async function runSession(conditions: Conditions, script: Script, epoch: number)
         } else if (v.nextVisible) runner.dispatch({ type: "next" });
         break;
       case "parent_handoff":
+        break;
+      case "ask":
+        runner.dispatch({ type: "askSkip" });
         break;
       default:
         if (v.nextVisible) runner.dispatch({ type: "next" });

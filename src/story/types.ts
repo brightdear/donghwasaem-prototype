@@ -199,10 +199,12 @@ export type Screen =
   | "ending"
   | "comprehension"
   | "parent_handoff"
-  | "report";
+  | "report"
+  | "ask"
+  | "askAnswer";
 
 /** 본문 화면: 페이지(문단 1개)마다 자동 낭독 → ttsDone 뒤 '다음' 표시 → next로 다음 페이지, 마지막 페이지면 다음 노드 */
-export type BodyScreen = "passage" | "echo" | "consequence" | "contrast" | "bridge" | "ending";
+export type BodyScreen = "passage" | "echo" | "consequence" | "contrast" | "bridge" | "ending" | "askAnswer";
 
 export type SpeakKind = "passage" | "prompt" | "option";
 export type TtsOutcome = "ended" | "cancelled" | "error" | "watchdog";
@@ -212,6 +214,10 @@ export interface EngineSettings {
   manualReading: boolean;
   /** 기본 double(같은 보기 재탭 또는 '이걸로 할래'). single은 숨김 설정 */
   confirmMode: "double" | "single";
+  /** 선택 직전 묻기 층(설계 6.1) */
+  askLayer: boolean;
+  /** 말로 묻기 = 실험자 토글 AND 브라우저 지원. 러너/main이 합쳐서 넘긴다 */
+  voiceAsk: boolean;
 }
 
 /** 모든 action은 at(ms, performance.now() 기준)을 가진다. 시계는 주입. */
@@ -223,7 +229,18 @@ export type Action =
   | { type: "answerWhy"; optionId: string; at: number }
   | { type: "answerQuestion"; optionId: string; at: number }
   | { type: "replay"; at: number }
-  | { type: "ttsDone"; utteranceId: string; outcome: TtsOutcome; at: number };
+  | { type: "ttsDone"; utteranceId: string; outcome: TtsOutcome; at: number }
+  | { type: "askCharacter"; characterId: string; at: number }
+  | { type: "askSkip"; at: number }
+  | { type: "voiceStart"; at: number }
+  | {
+      type: "voiceResult";
+      transcript: string;
+      alternatives: string[];
+      matched: { characterId: string; questionId: string; answerText: string[] } | null;
+      at: number;
+    }
+  | { type: "voiceFail"; reason: string; at: number };
 
 export interface BodyView {
   screen: BodyScreen;
@@ -265,10 +282,24 @@ export interface ComprehensionView {
   feedback: string | null;
   nextVisible: boolean;
 }
+export interface AskView {
+  screen: "ask";
+  nodeId: string; // c1.ask
+  choicePointId: string;
+  storyId: string;
+  prompt: string; // intro ?? STRINGS.askIntroDefault
+  characters: { id: string; name: string; portrait?: string }[];
+  selectedCharacterId: string | null;
+  questions: { id: string; text: string; asked: boolean }[]; // id = `${characterId}.${questionId}`, 고른 인물 것만
+  selectedQuestionId: string | null; // listen으로 강조된 카드
+  asksLeft: number;
+  voice: "hidden" | "idle" | "listening";
+  voiceFails: number;
+}
 export interface ParentHandoffView {
   screen: "parent_handoff";
 }
-export type View = BodyView | ChoiceView | WhyView | ComprehensionView | ParentHandoffView;
+export type View = BodyView | ChoiceView | WhyView | ComprehensionView | AskView | ParentHandoffView;
 
 export type Effect =
   | { type: "speak"; utteranceId: string; kind: SpeakKind; text: string } // utteranceId는 리듀서가 결정적으로 발급

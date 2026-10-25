@@ -186,6 +186,12 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
   text.addEventListener("click", () => dispatch({ type: "replay" }));
   wrap.appendChild(text);
 
+  if (view.screen === "ask") {
+    // 자리표시: 묻기 화면 렌더는 Task 10
+    text.appendChild(el("p", "child-text prompt", view.prompt));
+    return;
+  }
+
   if (view.screen === "choice") {
     text.appendChild(el("p", "child-text prompt", view.prompt));
     wrap.appendChild(

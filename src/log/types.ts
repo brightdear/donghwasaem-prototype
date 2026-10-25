@@ -24,7 +24,15 @@ export type EventType =
   | "dropout"
   | "report_view"
   | "report_source"
-  | "asked_check";
+  | "asked_check"
+  | "ask_character"
+  | "ask_listen"
+  | "ask_confirm"
+  | "ask_repeat"
+  | "ask_skip"
+  | "voice_start"
+  | "voice_result"
+  | "voice_fail";
 
 export type RtBasis = "tts_end" | "shown" | "watchdog";
 export type ReportSource = "llm" | "template";

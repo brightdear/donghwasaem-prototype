@@ -7,7 +7,7 @@ import { computeRt, updateBasis } from "../src/log/rt";
 
 const story = fixture as unknown as Story;
 const COND: Conditions = { branching: true, mismatch: "converge", askWhy: true };
-const AUTO = { manualReading: false, confirmMode: "double" as const };
+const AUTO = { manualReading: false, confirmMode: "double" as const, askLayer: false, voiceAsk: false };
 
 type R = StepResult<EngineState>;
 const speaks = (r: R) => r.effects.filter((e): e is Extract<Effect, { type: "speak" }> => e.type === "speak");
