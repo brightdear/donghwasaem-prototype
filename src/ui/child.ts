@@ -187,8 +187,63 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
   wrap.appendChild(text);
 
   if (view.screen === "ask") {
-    // 자리표시: 묻기 화면 렌더는 Task 10
+    // 선택 직전 묻기: 인물 버튼(그림 밖 버튼) → 그 인물에게 할 질문 카드 → 이걸로 할래
     text.appendChild(el("p", "child-text prompt", view.prompt));
+    const panel = el("div", "ask-panel");
+    const chars = el("div", "ask-characters");
+    for (const c of view.characters) {
+      const cls = c.id === view.selectedCharacterId ? "btn btn-character selected" : "btn btn-character";
+      const b = el("button", cls);
+      b.type = "button";
+      if (c.portrait) {
+        const img = el("img");
+        img.alt = "";
+        img.draggable = false;
+        img.addEventListener("error", () => img.remove());
+        img.src = `${import.meta.env.BASE_URL}img/${view.storyId}/${c.portrait}.webp`;
+        b.appendChild(img);
+      }
+      b.appendChild(el("span", undefined, c.name));
+      b.addEventListener("click", () => dispatch({ type: "askCharacter", characterId: c.id }));
+      chars.appendChild(b);
+    }
+    panel.appendChild(chars);
+    if (view.selectedCharacterId) {
+      const list = optionList(view.questions, view.selectedQuestionId, (id) => dispatch({ type: "listen", optionId: id }));
+      const cards = Array.from(list.querySelectorAll<HTMLButtonElement>(":scope > button"));
+      view.questions.forEach((q, i) => {
+        const card = cards[i];
+        if (q.asked && card) {
+          card.disabled = true;
+          card.classList.add("asked");
+        }
+      });
+      panel.appendChild(list);
+    }
+    wrap.appendChild(panel);
+
+    const actions = el("div", "actions");
+    const sel = view.selectedQuestionId;
+    const selQ = sel ? view.questions.find((q) => q.id === sel) : undefined;
+    if (sel && selQ && !selQ.asked) {
+      actions.appendChild(button("btn btn-primary", STRINGS.confirm, () => dispatch({ type: "confirm", optionId: sel })));
+    }
+    if (view.voice !== "hidden") {
+      const listening = view.voice === "listening";
+      actions.appendChild(
+        button(listening ? "btn btn-mic listening" : "btn btn-mic", listening ? STRINGS.listening : STRINGS.micLabel, () =>
+          dispatch({ type: "voiceStart" }),
+        ),
+      );
+    }
+    if (wrap.classList.contains("has-scene")) {
+      // 그림책 지면: 묻지 않고 넘어가기는 오른쪽 아래 책장 넘기기로
+      setPageTurn(wrap, () => dispatch({ type: "askSkip" }), null);
+      wrap.appendChild(cornerEl("next"));
+    } else {
+      actions.appendChild(button("btn btn-secondary", STRINGS.next, () => dispatch({ type: "askSkip" })));
+    }
+    wrap.appendChild(actions);
     return;
   }
 

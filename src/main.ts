@@ -18,6 +18,9 @@ import { createTts, type Tts, type TtsEvent } from "./tts";
 import { summarize } from "./report/summarize";
 import { generateReport } from "./report/llm";
 import { createRunner, lateEvent, ttsEventToAction, type Runner } from "./ui/runner";
+import { createAsr, isAsrSupported } from "./asr";
+import { keywordResponder } from "./ask/responder";
+import { createVoiceController } from "./ui/voice";
 import { renderExperimenter, type ExperimenterDeps } from "./ui/experimenter";
 import { renderChild } from "./ui/child";
 import { resolveArt, type ResolvedArt } from "./ui/art";
@@ -141,6 +144,8 @@ async function boot(root: HTMLElement): Promise<void> {
         status: "open",
         voice: voiceName,
       };
+      m.askLayer = cfg.askLayer;
+      m.voiceAsk = cfg.voiceAsk;
       const created = store.createSession(m);
       if (!created.ok) {
         deps.storageWarning = STORAGE_FULL_MSG;
@@ -159,12 +164,17 @@ async function boot(root: HTMLElement): Promise<void> {
       const renderView = (v: Parameters<typeof renderChild>[1]) => {
         const art = cfg.pictures ? resolveArt(story, v, lastArt, cfg.conditions) : null;
         lastArt = art;
-        renderChild(root, v, r.dispatch, art);
+        renderChild(root, v, childDispatch, art);
       };
       const r = createRunner({
         story,
         conditions: cfg.conditions,
-        engineSettings: { manualReading: cfg.manualReading, confirmMode: cfg.confirmMode, askLayer: false, voiceAsk: false },
+        engineSettings: {
+          manualReading: cfg.manualReading,
+          confirmMode: cfg.confirmMode,
+          askLayer: cfg.askLayer,
+          voiceAsk: cfg.voiceAsk && isAsrSupported(),
+        },
         meta: m,
         store: runnerStore,
         tts: cfg.manualReading ? null : tts,
@@ -172,7 +182,20 @@ async function boot(root: HTMLElement): Promise<void> {
         nowIso,
         render: renderView,
         onFinished: () => onFinished(story),
+        asrSupported: isAsrSupported(),
       });
+      // 마이크: 엔진이 voiceStart로 듣기 상태가 된 뒤 인식을 시작한다
+      const voice = createVoiceController({
+        story,
+        getState: () => r.getState(),
+        dispatch: (a) => r.dispatch(a),
+        makeAsr: (cb) => (isAsrSupported() ? createAsr({ lang: "ko-KR", timeoutMs: 6000, ...cb }) : null),
+        responder: keywordResponder,
+      });
+      const childDispatch: Parameters<typeof renderChild>[2] = (a) => {
+        r.dispatch(a);
+        if (a.type === "voiceStart") voice.start();
+      };
       runner = r;
       r.start();
     },

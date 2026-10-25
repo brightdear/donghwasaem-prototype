@@ -22,6 +22,8 @@ export interface ExperimenterDeps {
     confirmMode: "double" | "single";
     manualReading: boolean;
     pictures: boolean;
+    askLayer: boolean;
+    voiceAsk: boolean;
   }): void;
   onExportCsv(): void;
   onExportJson(): void;
@@ -69,6 +71,8 @@ interface FormState {
   confirmMode: "double" | "single";
   manualReading: boolean;
   pictures: boolean;
+  askLayer: boolean;
+  voiceAsk: boolean;
   keyDraft: string;
 }
 
@@ -88,6 +92,8 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
     confirmMode: deps.settings.confirmMode,
     manualReading: deps.settings.manualReading,
     pictures: deps.settings.pictures,
+    askLayer: deps.settings.askLayer,
+    voiceAsk: deps.settings.voiceAsk,
     keyDraft: "",
   };
   kept = state;
@@ -226,6 +232,31 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
   picRow.appendChild(pic);
   picRow.appendChild(el("span", undefined, "그림 보이기"));
   cond.appendChild(picRow);
+
+  // 묻기 층·음성 질문도 분기 조건과 독립(이야기에 ask 블록이 있는 선택점에서만 나타난다)
+  const askRow = el("label", "radio-row");
+  const ask = el("input");
+  ask.type = "checkbox";
+  ask.checked = state.askLayer;
+  ask.addEventListener("change", () => {
+    state.askLayer = ask.checked;
+    patchSettings({ askLayer: ask.checked });
+  });
+  askRow.appendChild(ask);
+  askRow.appendChild(el("span", undefined, "묻기 층 (선택 전 인물에게 질문)"));
+  cond.appendChild(askRow);
+
+  const vaRow = el("label", "radio-row");
+  const va = el("input");
+  va.type = "checkbox";
+  va.checked = state.voiceAsk;
+  va.addEventListener("change", () => {
+    state.voiceAsk = va.checked;
+    patchSettings({ voiceAsk: va.checked });
+  });
+  vaRow.appendChild(va);
+  vaRow.appendChild(el("span", undefined, "음성 질문 (마이크 버튼)"));
+  cond.appendChild(vaRow);
   form.appendChild(cond);
 
   const mrRow = el("label", "radio-row");
@@ -340,6 +371,8 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
         confirmMode: advanced ? state.confirmMode : "double",
         manualReading,
         pictures: state.pictures,
+        askLayer: state.askLayer,
+        voiceAsk: state.voiceAsk,
       });
     }),
   );

@@ -45,16 +45,16 @@ npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ �
 그림은 선택이다. **그림 파일이 없으면 그림 영역이 사라지고 지금처럼 글만 보인다**(레이아웃 깨짐 없음). 실험자 화면 조건 패널의 "그림 보이기"를 끄면 그림·오버레이를 아예 그리지 않는다(분기 토글과 독립, `session_start` 의 `detail.pictures` 에 기록).
 
 - **장면 id = 본문 노드 id**(`p1`, `c1.c1a.consequence`, `c1.c1b.rewind.consequence`, `end.original`, `end.alt` …, rewind 시도 접미사 `#n` 은 뺀다).
-- **파일 위치**: `public/img/<storyId>/<장면 id의 '.'을 '_'로>.png`. 예: `public/img/heungbu/c1_c1b_rewind_consequence.png`, `public/img/heungbu/end_alt.png`.
+- **파일 위치**: `public/img/<storyId>/<장면 id의 '.'을 '_'로>.webp`. 예: `public/img/heungbu/c1_c1b_rewind_consequence.webp`, `public/img/heungbu/end_alt.webp`.
 - **재사용 규칙**: `bridge`·`contrast`·`contrastFinal`·`echo`(분기 off의 `offNarration` 포함) 화면은 같은 선택지의 `consequence` 그림을 쓰고, 그것도 없으면 직전 척추 passage 그림을 쓴다. 선택·이유·이해 질문 화면은 직전에 보여 준 그림을 그대로 둔다.
-- **오버레이**: 투명 PNG를 `public/img/common/<name>.png` 에 넣고 시나리오 JSON 최상위 `art.motions` 에 적는다. 그 장면의 그 페이지에 들어설 때 1회(1.2~2초) 움직이고 끝 상태로 멈춘다. 기기의 '동작 줄이기' 설정이면 움직임 없이 끝 상태만 보인다.
+- **오버레이**: 투명 배경 그림을 `public/img/common/<name>.webp` 에 넣고 시나리오 JSON 최상위 `art.motions` 에 적는다. 그 장면의 그 페이지에 들어설 때 1회(1.2~2초) 움직이고 끝 상태로 멈춘다. 기기의 '동작 줄이기' 설정이면 움직임 없이 끝 상태만 보인다.
 - `art` 섹션은 없어도 된다(위 파일명 규칙으로 추정). 파일명을 바꾸거나 그림을 일부러 빼려면 `art.scenes` 에 적는다(`null` = 그 장면은 그림 없음).
 
 ```json
 "art": {
-  "scenes": { "p1": { "image": "p1_house.png" }, "c1.c1b.converge.consequence": { "image": null } },
+  "scenes": { "p1": { "image": "p1_house.webp" }, "c1.c1b.converge.consequence": { "image": null } },
   "motions": [
-    { "scene": "p2", "page": 2, "overlay": "swallow.png", "motion": "fall", "x": 0.6, "y": 0.4, "size": 0.25 }
+    { "scene": "p2", "page": 2, "overlay": "swallow.webp", "motion": "fall", "x": 0.6, "y": 0.4, "size": 0.25 }
   ]
 }
 ```
@@ -73,6 +73,7 @@ npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ �
 ## 금지 사항
 
 - 장면 그림과 이야기와 일치하는 오버레이 애니메이션(위 6종)만 허용한다. 게임·핫스팟(누르면 반응하는 그림)·배경음·효과음·보상·장식 애니메이션은 넣지 않는다. 이모지는 쓰지 않는다.
+- 그림 위 핫스팟(누르면 반응하는 그림)은 금지. 선택 직전 묻기 화면의 인물 버튼은 그림 밖 버튼이라 허용.
 - API 키를 커밋하지 않는다(키는 실험자 기기 localStorage 에만, CSV·JSON 내보내기에서 제외).
 - `innerHTML` 을 쓰지 않는다. 모든 텍스트는 `textContent` 로 렌더링한다.
 - `docs/transcripts/` 는 생성물이므로 커밋하지 않는다.
