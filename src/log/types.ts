@@ -126,6 +126,10 @@ export interface SessionMeta {
   started_epoch_ms: number;
   status: SessionStatus;
   voice?: string | null;
+  /** 묻기 층 사용 여부 */
+  askLayer?: boolean;
+  /** 음성으로 묻기 사용 여부 */
+  voiceAsk?: boolean;
   /** 장면 그림 표시 여부. 이 필드가 없는 이전 세션은 그림 기능 전(그림 없음) */
   pictures?: boolean;
   exported?: boolean; // 내보내기 여부(미내보내기 세션 수 배지용)

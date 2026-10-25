@@ -68,6 +68,7 @@ describe("runner", () => {
       confirm_mode: "double",
       ts_iso: "2026-10-20T00:00:00.000Z",
     });
+    expect(ev[0]!.detail).toMatchObject({ askLayer: false, voiceAsk: false, asr: "unsupported" });
     expect(ev.map((e) => e.event_type)).toEqual(["session_start", "screen_enter", "tts_start"]);
     expect(ev.map((e) => e.seq)).toEqual([1, 2, 3]);
     expect(views.at(-1)).toMatchObject({ screen: "passage", nextVisible: false });

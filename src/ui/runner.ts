@@ -25,6 +25,8 @@ export interface RunnerDeps {
   nowIso: () => string;
   render: (view: View) => void;
   onFinished: () => void;
+  /** 브라우저가 음성 인식을 지원하는지(session_start 로그용) */
+  asrSupported?: boolean;
 }
 
 export interface Runner {
@@ -123,6 +125,9 @@ export function createRunner(deps: RunnerDeps): Runner {
             voice: deps.meta.voice ?? null,
             manualReading: deps.engineSettings.manualReading,
             pictures: deps.meta.pictures ?? false,
+            askLayer: deps.meta.askLayer ?? false,
+            voiceAsk: deps.meta.voiceAsk ?? false,
+            asr: deps.asrSupported ? "available" : "unsupported",
           },
         });
         const r = init(deps.story, deps.conditions, deps.engineSettings, at);
