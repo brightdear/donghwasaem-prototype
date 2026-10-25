@@ -20,6 +20,7 @@ import { generateReport } from "./report/llm";
 import { createRunner, lateEvent, ttsEventToAction, type Runner } from "./ui/runner";
 import { createAsr, isAsrSupported } from "./asr";
 import { keywordResponder } from "./ask/responder";
+import { createLlmResponder } from "./ask/llm";
 import { createVoiceController } from "./ui/voice";
 import { renderExperimenter, type ExperimenterDeps } from "./ui/experimenter";
 import { renderChild } from "./ui/child";
@@ -146,6 +147,9 @@ async function boot(root: HTMLElement): Promise<void> {
       };
       m.askLayer = cfg.askLayer;
       m.voiceAsk = cfg.voiceAsk;
+      // LLM 응답기는 키가 있고 토글이 켜졌을 때만. 실패하면 키워드 매칭으로 복구
+      const useAskLlm = !!settings.apiKey && cfg.askLlm;
+      m.askLlm = useAskLlm;
       const created = store.createSession(m);
       if (!created.ok) {
         deps.storageWarning = STORAGE_FULL_MSG;
@@ -190,7 +194,8 @@ async function boot(root: HTMLElement): Promise<void> {
         getState: () => r.getState(),
         dispatch: (a) => r.dispatch(a),
         makeAsr: (cb) => (isAsrSupported() ? createAsr({ lang: "ko-KR", timeoutMs: 6000, ...cb }) : null),
-        responder: keywordResponder,
+        responder: useAskLlm ? createLlmResponder(settings.apiKey as string, { fallback: keywordResponder }) : keywordResponder,
+        responderKind: useAskLlm ? "llm" : "keyword",
       });
       const childDispatch: Parameters<typeof renderChild>[2] = (a) => {
         r.dispatch(a);

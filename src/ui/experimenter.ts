@@ -24,6 +24,7 @@ export interface ExperimenterDeps {
     pictures: boolean;
     askLayer: boolean;
     voiceAsk: boolean;
+    askLlm: boolean;
   }): void;
   onExportCsv(): void;
   onExportJson(): void;
@@ -73,6 +74,7 @@ interface FormState {
   pictures: boolean;
   askLayer: boolean;
   voiceAsk: boolean;
+  askLlm: boolean;
   keyDraft: string;
 }
 
@@ -94,6 +96,7 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
     pictures: deps.settings.pictures,
     askLayer: deps.settings.askLayer,
     voiceAsk: deps.settings.voiceAsk,
+    askLlm: deps.settings.askLlm,
     keyDraft: "",
   };
   kept = state;
@@ -257,6 +260,19 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
   vaRow.appendChild(va);
   vaRow.appendChild(el("span", undefined, "음성 질문 (마이크 버튼)"));
   cond.appendChild(vaRow);
+
+  // 음성 질문에 LLM 대답: 키가 있을 때만 실제로 쓰고, 실패하면 키워드 매칭으로 돌아간다
+  const llmRow = el("label", "radio-row");
+  const llm = el("input");
+  llm.type = "checkbox";
+  llm.checked = state.askLlm;
+  llm.addEventListener("change", () => {
+    state.askLlm = llm.checked;
+    patchSettings({ askLlm: llm.checked });
+  });
+  llmRow.appendChild(llm);
+  llmRow.appendChild(el("span", undefined, "음성 대답 LLM (키 필요)"));
+  cond.appendChild(llmRow);
   form.appendChild(cond);
 
   const mrRow = el("label", "radio-row");
@@ -373,6 +389,7 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
         pictures: state.pictures,
         askLayer: state.askLayer,
         voiceAsk: state.voiceAsk,
+        askLlm: state.askLlm,
       });
     }),
   );

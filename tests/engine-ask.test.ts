@@ -199,6 +199,35 @@ describe("말로 묻기", () => {
     expect(act(sim, { type: "voiceResult", transcript: "몇 개야", alternatives: [], matched: M })).toEqual([]);
     expect(act(sim, { type: "voiceFail", reason: "aborted" })).toEqual([]);
   });
+  it("준비 밖 질문(questionId free): ask_free 로그·대답 화면 c1.ask.tori.free·asksLeft 그대로", () => {
+    const sim = toC1();
+    act(sim, { type: "voiceStart" });
+    act(sim, { type: "voiceResult", transcript: "토리야 집에 도토리 많아", alternatives: [], matched: { characterId: "tori", questionId: "free", answerText: ["다섯 개쯤 있어."] }, responder: "llm" });
+    expect(sim.logs.find((e) => e.event_type === "voice_result")).toMatchObject({ detail: { matched: "c1.ask.tori.free", responder: "llm" } });
+    expect(sim.logs.some((e) => e.event_type === "ask_confirm")).toBe(false);
+    expect(sim.logs.find((e) => e.event_type === "ask_free")).toMatchObject({
+      choice_point_id: "c1",
+      question_id: "c1.ask.tori.free",
+      option_id: "tori.free",
+      detail: { via: "voice", transcript: "토리야 집에 도토리 많아", answer: "다섯 개쯤 있어." },
+    });
+    expect(view(sim)).toMatchObject({ screen: "askAnswer", nodeId: "c1.ask.tori.free", paragraphs: ["다섯 개쯤 있어."] });
+    endSpeech(sim); act(sim, { type: "next" });
+    expect(view(sim)).toMatchObject({ screen: "ask", asksLeft: 2, voiceFails: 0 });
+  });
+  it("free인데 블록에 없는 인물이면 미인식 처리", () => {
+    const sim = toC1();
+    act(sim, { type: "voiceStart" });
+    act(sim, { type: "voiceResult", transcript: "곰아", alternatives: [], matched: { characterId: "bear", questionId: "free", answerText: ["응."] } });
+    expect(sim.logs.some((e) => e.event_type === "ask_free")).toBe(false);
+    expect(view(sim)).toMatchObject({ screen: "ask", voiceFails: 1 });
+  });
+  it("responder 없으면 voice_result.detail.responder는 keyword", () => {
+    const sim = toC1();
+    act(sim, { type: "voiceStart" });
+    act(sim, { type: "voiceResult", transcript: "x", alternatives: [], matched: null });
+    expect(sim.logs.find((e) => e.event_type === "voice_result")).toMatchObject({ detail: { responder: "keyword" } });
+  });
   it("듣지 않는 중의 voiceResult·voiceFail은 무시", () => {
     const sim = toC1();
     expect(act(sim, { type: "voiceResult", transcript: "x", alternatives: [], matched: null })).toEqual([]);

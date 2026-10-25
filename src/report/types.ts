@@ -22,9 +22,14 @@ export interface ReportChoice {
 export interface ReportAsk {
   scene: string; // ask.sceneLabel ?? 선택 지점 질문
   character: string;
-  question: string;
+  question: string; // 준비 밖 음성 질문(ask_free)이면 고정 문구 FREE_QUESTION_LABEL
   via: "card" | "voice";
+  /** 준비 밖 음성 질문(ask_free). 인식 글·LLM 대답은 여기에 넣지 않는다(AC-16) */
+  free?: true;
 }
+
+/** ask_free의 question 자리 고정 문구 */
+export const FREE_QUESTION_LABEL = "스스로 생각한 질문";
 
 export interface ReportInput {
   storyTitle: string;
@@ -32,7 +37,7 @@ export interface ReportInput {
   choices: ReportChoice[]; // 분기 off면 []
   comprehension: { type: QuestionType; result: ComprehensionResult }[];
   parentPrompts: string[];
-  asks: ReportAsk[]; // ask_confirm 순서. 인식 글(transcript)은 여기에 없다(AC-16)
+  asks: ReportAsk[]; // ask_confirm·ask_free 순서. 인식 글(transcript)은 여기에 없다(AC-16)
 }
 
 export interface ReportText {

@@ -107,6 +107,20 @@ describe("summarize", () => {
     ]);
     expect(saidByAsk(r, story)).toEqual(["제비야 왜 못 날아", undefined]);
   });
+  it("ask_free → asks에는 인식 글 대신 고정 문구(free), saidByAsk에 인식 글; LLM 대답은 넣지 않는다", () => {
+    const r = rec([
+      ev({ event_type: "ask_free", choice_point_id: "c1", question_id: "c1.ask.swallow.free", option_id: "swallow.free", detail: { via: "voice", transcript: "제비야 몇 살이야", answer: "나는 아기 제비야." } }),
+      ev({ event_type: "ask_confirm", choice_point_id: "c1", question_id: "c1.ask.swallow.q2", option_id: "swallow.q2", detail: { via: "card" } }),
+    ]);
+    const asks = summarize(r, story).asks;
+    expect(asks).toEqual([
+      { scene: "다친 제비를 본 장면", character: "제비", question: "스스로 생각한 질문", via: "voice", free: true },
+      { scene: "다친 제비를 본 장면", character: "제비", question: "어디가 아파?", via: "card" },
+    ]);
+    expect(JSON.stringify(asks)).not.toContain("몇 살");
+    expect(JSON.stringify(asks)).not.toContain("아기 제비");
+    expect(saidByAsk(r, story)).toEqual(["제비야 몇 살이야", undefined]);
+  });
   it("ask 없는 세션은 asks []", () => expect(summarize(rec([]), story).asks).toEqual([]));
   it("범주 경계값", () => {
     expect(categorize(2, 4)).toBe("some");

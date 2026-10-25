@@ -10,10 +10,15 @@ export interface AskInput {
   characterId: string | null;
   transcript: string;
   alternatives: string[];
+  /** 묻기 직전 passage의 문단 전체(LLM 응답기의 장면 맥락). 키워드 매처는 쓰지 않는다 */
+  scene: string[];
+  /** 이야기 제목(LLM 응답기용, 없어도 됨) */
+  storyTitle?: string;
 }
 
 export interface AskOutput {
   characterId: string;
+  /** 준비된 질문 id, 또는 준비 밖 질문에 LLM이 대답했으면 "free" */
   questionId: string;
   answerText: string[];
 }

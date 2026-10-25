@@ -56,6 +56,11 @@ describe("curiosity", () => {
     expect(t.curiosity).toBe("다친 제비를 본 장면에서 제비에게 「왜 못 날아?」 하고 물어봤어요. 직접 말로 「제비야 왜 못 날아」라고 물었어요.\n다친 제비를 본 장면에서 흥부에게 「제비 무서워?」 하고 물어봤어요.");
     expect(containsForbidden(t.curiosity).hit).toBe(false);
   });
+  it("준비 밖 음성 질문(free)은 아이 말을 그대로 한 문장으로", () => {
+    const a = { scene: "다친 제비를 본 장면", character: "제비", question: "스스로 생각한 질문", via: "voice" as const, free: true as const };
+    expect(templateReport({ ...base, asks: [a] }, ["제비야 몇 살이야"]).curiosity).toBe("다친 제비를 본 장면에서 제비에게 직접 말로 「제비야 몇 살이야」라고 물었어요.");
+    expect(templateReport({ ...base, asks: [a] }).curiosity).toBe("다친 제비를 본 장면에서 제비에게 스스로 생각한 질문을 해 봤어요.");
+  });
 });
 
 describe("templateReport", () => {

@@ -735,15 +735,43 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
       if (cur.t !== "ask" || !cur.listening) return unchanged;
       cur.listening = false;
       const m = action.matched;
-      const key = m ? `${m.characterId}.${m.questionId}` : null;
-      const found = key !== null && askQuestion(askOf(s, cur.cpId), key) ? key : null;
+      const ask = askOf(s, cur.cpId);
+      // 준비 밖 질문(LLM 대답): 블록 안의 인물이고 대답이 있을 때만 받는다
+      const free =
+        m !== null && m.questionId === "free" && ask.characters.some((c) => c.id === m.characterId) && m.answerText.length > 0
+          ? m
+          : null;
+      const key = m && !free ? `${m.characterId}.${m.questionId}` : null;
+      const found = key !== null && askQuestion(ask, key) ? key : null;
+      const matchedId = free ? `${cur.cpId}.ask.${free.characterId}.free` : found ? `${cur.cpId}.ask.${found}` : null;
       log(ctx, {
         event_type: "voice_result",
         at,
         ...ctxCols(cur, s),
-        detail: { transcript: action.transcript, alternatives: action.alternatives, matched: found ? `${cur.cpId}.ask.${found}` : null },
+        detail: {
+          transcript: action.transcript,
+          alternatives: action.alternatives,
+          matched: matchedId,
+          responder: action.responder ?? "keyword",
+        },
       });
-      if (found === null) {
+      if (free) {
+        // 대답만 낭독한다. asked·asksLeft·voiceFails는 건드리지 않는다(준비 밖 질문은 횟수에 세지 않음)
+        const nodeId = `${cur.cpId}.ask.${free.characterId}.free`;
+        log(ctx, {
+          event_type: "ask_free",
+          at,
+          ...ctxCols(cur, s),
+          question_id: nodeId,
+          option_id: `${free.characterId}.free`,
+          detail: { via: "voice", transcript: action.transcript, answer: free.answerText.join(" ") },
+        });
+        s.queue = [
+          { t: "body", screen: "askAnswer", nodeId, cpId: cur.cpId, paragraphs: [...free.answerText], attempt: null },
+          { t: "ask", cpId: cur.cpId },
+        ];
+        advance(ctx, at);
+      } else if (found === null) {
         voiceMiss(ctx, cur, at);
       } else if (!(s.asked[cur.cpId] ?? []).includes(found)) {
         confirmAsk(ctx, cur, found, at, "voice", action.transcript);
@@ -752,7 +780,7 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
         const nodeId = `${cur.cpId}.ask.${found}`;
         log(ctx, { event_type: "ask_repeat", at, ...ctxCols(cur, s), question_id: nodeId, option_id: found, detail: { via: "voice", transcript: action.transcript } });
         s.queue = [
-          { t: "body", screen: "askAnswer", nodeId, cpId: cur.cpId, paragraphs: askQuestion(askOf(s, cur.cpId), found)!.q.answer, attempt: null },
+          { t: "body", screen: "askAnswer", nodeId, cpId: cur.cpId, paragraphs: askQuestion(ask, found)!.q.answer, attempt: null },
           { t: "ask", cpId: cur.cpId },
         ];
         advance(ctx, at);

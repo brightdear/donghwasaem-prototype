@@ -52,11 +52,11 @@ describe("matchQuestion", () => {
 describe("keywordResponder", () => {
   const ask: AskBlock = { voice: true, characters: chars };
   it("맞으면 answer를 채워 돌려준다", async () => {
-    await expect(keywordResponder.respond({ storyId: "h", choicePointId: "c1", characterId: null, transcript: "제비야 왜 못 날아", alternatives: [] }, ask))
+    await expect(keywordResponder.respond({ storyId: "h", choicePointId: "c1", characterId: null, transcript: "제비야 왜 못 날아", alternatives: [], scene: [] }, ask))
       .resolves.toEqual({ characterId: "swallow", questionId: "q1", answerText: ["다리를 다쳤어."] });
   });
   it("못 맞추면 null", async () => {
-    await expect(keywordResponder.respond({ storyId: "h", choicePointId: "c1", characterId: null, transcript: "안녕", alternatives: [] }, ask)).resolves.toBeNull();
+    await expect(keywordResponder.respond({ storyId: "h", choicePointId: "c1", characterId: null, transcript: "안녕", alternatives: [], scene: [] }, ask)).resolves.toBeNull();
   });
 });
 

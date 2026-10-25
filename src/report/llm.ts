@@ -44,17 +44,37 @@ export function buildRequest(input: ReportInput): Anthropic.MessageCreateParamsN
   };
 }
 
-function parseReportText(raw: string): ReportText | null {
+/** 모델이 ```json 코드블록으로 감싸 보내도 JSON으로 읽는다. 실패하면 undefined. 묻기 응답기와 공유 */
+export function parseJsonReply(raw: string): unknown {
   const stripped = raw
     .trim()
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "");
-  let data: unknown;
   try {
-    data = JSON.parse(stripped);
+    return JSON.parse(stripped) as unknown;
   } catch {
-    return null;
+    return undefined;
   }
+}
+
+/**
+ * 브라우저 직접 호출 클라이언트. 묻기 응답기와 공유.
+ * 정적 호스팅·서버 없음: 실험자 본인 키를 쓰고(한도 낮은 전용 키 권장), 키는 해당 기기 localStorage에만 보관한다.
+ */
+export function createClient(apiKey: string, timeoutMs: number): Anthropic {
+  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true, timeout: timeoutMs, maxRetries: 0 });
+}
+
+/** 응답 본문의 text 블록을 이어 붙인다 */
+export function replyText(res: Anthropic.Message): string {
+  return res.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+}
+
+function parseReportText(raw: string): ReportText | null {
+  const data = parseJsonReply(raw);
   if (typeof data !== "object" || data === null) return null;
   const d = data as Record<string, unknown>;
   const { curiosity, choices, comprehension, prompts } = d;
@@ -86,27 +106,14 @@ export async function generateReport(
 
   const started = now();
   try {
-    const client =
-      deps.client ??
-      new Anthropic({
-        apiKey: apiKey as string,
-        // 정적 호스팅·서버 없음: 실험자 본인 키를 쓰고(한도 낮은 전용 키 권장),
-        // 키는 해당 기기 localStorage에만 보관한다.
-        dangerouslyAllowBrowser: true,
-        timeout: LLM_TIMEOUT_MS,
-        maxRetries: 0,
-      });
+    const client = deps.client ?? createClient(apiKey, LLM_TIMEOUT_MS);
     const res = await client.messages.create(buildRequest(input));
     const latency = now() - started;
 
     if (res.stop_reason === "refusal") return fallback("refusal");
     if (res.stop_reason === "max_tokens") return fallback("max_tokens");
 
-    const raw = res.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-    const text = parseReportText(raw);
+    const text = parseReportText(replyText(res));
     if (!text) return fallback("parse_error");
 
     const all = [text.curiosity, text.choices, text.comprehension, ...text.prompts].join("\n");

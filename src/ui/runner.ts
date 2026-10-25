@@ -127,6 +127,7 @@ export function createRunner(deps: RunnerDeps): Runner {
             pictures: deps.meta.pictures ?? false,
             askLayer: deps.meta.askLayer ?? false,
             voiceAsk: deps.meta.voiceAsk ?? false,
+            askLlm: deps.meta.askLlm ?? false,
             asr: deps.asrSupported ? "available" : "unsupported",
           },
         });

@@ -29,6 +29,7 @@ export type EventType =
   | "ask_listen"
   | "ask_confirm"
   | "ask_repeat"
+  | "ask_free" // 준비 밖 음성 질문에 LLM 대답(횟수에 세지 않음)
   | "ask_skip"
   | "voice_start"
   | "voice_result"
@@ -130,6 +131,8 @@ export interface SessionMeta {
   askLayer?: boolean;
   /** 음성으로 묻기 사용 여부 */
   voiceAsk?: boolean;
+  /** 음성 질문에 LLM 응답기를 썼는지(키가 있고 토글이 켜졌을 때) */
+  askLlm?: boolean;
   /** 장면 그림 표시 여부. 이 필드가 없는 이전 세션은 그림 기능 전(그림 없음) */
   pictures?: boolean;
   exported?: boolean; // 내보내기 여부(미내보내기 세션 수 배지용)
@@ -154,6 +157,8 @@ export interface Settings {
   askLayer: boolean;
   /** 음성 질문 토글. `voice`(낭독 목소리)와 다름 */
   voiceAsk: boolean;
+  /** 음성 질문에 LLM 응답기 사용(키 필요). 기본 꺼짐 */
+  askLlm: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -166,6 +171,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pictures: true,
   askLayer: true,
   voiceAsk: true,
+  askLlm: false,
 };
 
 export const STORAGE_KEYS = {

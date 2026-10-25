@@ -33,8 +33,10 @@ function curiosityText(asks: ReportAsk[], said: (string | undefined)[]): string 
   if (asks.length === 0) return "오늘은 인물에게 따로 물어보지 않고 이야기를 끝까지 들었어요.";
   return asks
     .map((a, i) => {
-      const base = `${a.scene}에서 ${a.character}에게 「${a.question}」 하고 물어봤어요.`;
       const s = said[i];
+      // 준비 밖 음성 질문: 고정 문구 대신 아이가 한 말을 그대로 전한다
+      if (a.free) return s ? `${a.scene}에서 ${a.character}에게 직접 말로 「${s}」라고 물었어요.` : `${a.scene}에서 ${a.character}에게 스스로 생각한 질문을 해 봤어요.`;
+      const base = `${a.scene}에서 ${a.character}에게 「${a.question}」 하고 물어봤어요.`;
       return s ? `${base} 직접 말로 「${s}」라고 물었어요.` : base;
     })
     .join("\n");

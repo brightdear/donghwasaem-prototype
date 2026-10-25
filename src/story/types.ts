@@ -237,7 +237,10 @@ export type Action =
       type: "voiceResult";
       transcript: string;
       alternatives: string[];
+      /** questionId "free" = 준비 밖 질문에 LLM이 지은 대답(answerText) */
       matched: { characterId: string; questionId: string; answerText: string[] } | null;
+      /** 어느 응답기가 맞췄는지(voice_result 로그용). 기본 "keyword" */
+      responder?: "llm" | "keyword";
       at: number;
     }
   | { type: "voiceFail"; reason: string; at: number };

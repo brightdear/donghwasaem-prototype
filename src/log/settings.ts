@@ -30,6 +30,7 @@ export function parseSettings(raw: unknown): Settings {
     pictures: typeof p.pictures === "boolean" ? p.pictures : d.pictures,
     askLayer: typeof p.askLayer === "boolean" ? p.askLayer : d.askLayer,
     voiceAsk: typeof p.voiceAsk === "boolean" ? p.voiceAsk : d.voiceAsk,
+    askLlm: typeof p.askLlm === "boolean" ? p.askLlm : d.askLlm,
     defaultConditions: conditions,
   };
 }

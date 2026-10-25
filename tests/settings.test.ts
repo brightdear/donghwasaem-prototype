@@ -22,6 +22,11 @@ describe("parseSettings", () => {
     expect(parseSettings({ askLayer: false, voiceAsk: false })).toMatchObject({ askLayer: false, voiceAsk: false });
     expect(parseSettings({ askLayer: "no", voiceAsk: 1 })).toMatchObject({ askLayer: true, voiceAsk: true });
   });
+  it("askLlm 기본 false, 저장값 유지, 엉뚱한 타입은 기본값", () => {
+    expect(parseSettings({}).askLlm).toBe(false);
+    expect(parseSettings({ askLlm: true }).askLlm).toBe(true);
+    expect(parseSettings({ askLlm: "yes" }).askLlm).toBe(false);
+  });
   it("객체가 아니면 기본값", () => {
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS);
     expect(parseSettings("x")).toEqual(DEFAULT_SETTINGS);
