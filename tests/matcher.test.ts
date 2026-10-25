@@ -69,5 +69,10 @@ describe("실제 흥부 c1·c3 묻기 블록", () => {
     expect(matchQuestion("놀부 아저씨 왜 왔어요", [], c3.characters, null)).toMatchObject({ characterId: "nolbu", questionId: "q1" });
     expect(matchQuestion("안 추워?", [], c3.characters, null)).toMatchObject({ characterId: "nolbu", questionId: "q2" });
   });
+  it("엄마 어디 있어 → swallow.q3 (q2와 동점 방지)", () => {
+    expect(matchQuestion("엄마는 어디 있어", [], c1.characters, null)).toMatchObject({ characterId: "swallow", questionId: "q3" });
+    expect(matchQuestion("엄마 어디 있어?", [], c1.characters, null)).toMatchObject({ characterId: "swallow", questionId: "q3" });
+  });
+  it("형 밉지 → heungbu.q1", () => expect(matchQuestion("형 밉지?", [], c3.characters, null)).toMatchObject({ characterId: "heungbu", questionId: "q1" }));
   it("c2는 음성 없음", () => expect(h.choicePoints[1]!.ask!.voice).toBe(false));
 });
