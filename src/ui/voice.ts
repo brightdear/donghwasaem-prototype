@@ -28,7 +28,7 @@ export function createVoiceController(deps: {
   dispatch: (a: RunnerAction) => void;
   makeAsr: (cb: { onResult: (r: AsrResult) => void; onFail: (reason: AsrFailReason) => void }) => Asr | null;
   responder: AskResponder;
-  /** voice_result 로그에 남길 응답기 종류. 기본 "keyword" */
+  /** 설정된 응답기 종류. 못 맞춰 대답한 응답기가 없을 때 voice_result에 남긴다. 기본 "keyword" */
   responderKind?: "llm" | "keyword";
 }): VoiceController {
   let asr: Asr | null = null;
@@ -60,12 +60,15 @@ export function createVoiceController(deps: {
       )
       .then((matched) => {
         if (myGen !== gen) return;
+        // 로그에는 실제로 대답한 응답기와 실패 이유·지연을 남긴다(못 맞췄으면 설정된 응답기)
         deps.dispatch({
           type: "voiceResult",
           transcript: r.transcript,
           alternatives: r.alternatives,
           matched,
-          responder: responderKind,
+          responder: matched?.source ?? responderKind,
+          ...(matched?.fallbackReason !== undefined ? { fallbackReason: matched.fallbackReason } : {}),
+          ...(matched?.latencyMs !== undefined ? { latencyMs: matched.latencyMs } : {}),
         });
       })
       .catch(() => {

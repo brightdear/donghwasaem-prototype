@@ -237,6 +237,7 @@ describe("R10 ask", () => {
     expect(codes(withAsk((a) => (a.characters = [a.characters[0], a.characters[0], a.characters[0]])))).toContain("R10_ASK_CHARACTERS");
   });
   it("questions 1개 → R10_ASK_QUESTIONS", () => expect(codes(withAsk((a) => a.characters[0].questions.pop()))).toContain("R10_ASK_QUESTIONS"));
+  it("질문 id 'free'(예약) → R10_ASK_QID_RESERVED", () => expect(codes(withAsk((a) => (a.characters[0].questions[0].id = "free")))).toContain("R10_ASK_QID_RESERVED"));
   it("질문 id 중복 → R10_ASK_QID_DUP", () => expect(codes(withAsk((a) => (a.characters[0].questions[1].id = "q1")))).toContain("R10_ASK_QID_DUP"));
   it("keywords 없음·1자 → R10_ASK_KEYWORDS", () => {
     expect(codes(withAsk((a) => (a.characters[0].questions[0].keywords = [])))).toContain("R10_ASK_KEYWORDS");

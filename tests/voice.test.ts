@@ -86,16 +86,42 @@ describe("voice controller", () => {
     act(sim, { type: "voiceFail", reason: "other" });
     act(sim, { type: "voiceStart" });
     voice.start();
-    pending[0]!({ characterId: "tori", questionId: "q1", answerText: ["세 개야."] });
+    pending[0]!({ characterId: "tori", questionId: "q1", answerText: ["세 개야."], source: "keyword" });
     await flush();
     expect(sim.logs.filter((e) => e.event_type === "voice_result")).toHaveLength(0);
     expect(view(sim)).toMatchObject({ screen: "ask", voice: "listening" });
     // 새 세션의 결과는 정상 처리
     rec.cb!.onResult({ transcript: "배고파?", alternatives: [] });
-    pending[1]!({ characterId: "tori", questionId: "q2", answerText: ["조금 고파."] });
+    pending[1]!({ characterId: "tori", questionId: "q2", answerText: ["조금 고파."], source: "llm", latencyMs: 800 });
     await flush();
     expect(sim.logs.filter((e) => e.event_type === "voice_result")).toHaveLength(1);
     expect(view(sim)).toMatchObject({ screen: "askAnswer", nodeId: "c1.ask.tori.q2" });
+  });
+
+  it("LLM으로 설정돼도 실제로 대답한 응답기(키워드 대체)와 실패 이유·지연을 남긴다", async () => {
+    const responder: AskResponder = {
+      respond: async () => ({ characterId: "tori", questionId: "q1", answerText: ["세 개야."], source: "keyword", fallbackReason: "timeout", latencyMs: 6000 }),
+    };
+    const { sim, rec, voice } = setup({ responder, responderKind: "llm" });
+    act(sim, { type: "voiceStart" });
+    voice.start();
+    rec.cb!.onResult({ transcript: "토리야 몇 개야", alternatives: [] });
+    await flush();
+    expect(sim.logs.find((e) => e.event_type === "voice_result")).toMatchObject({ detail: { responder: "keyword", fallbackReason: "timeout", latencyMs: 6000 } });
+  });
+
+  it("LLM이 대답하면 responder llm·latencyMs, fallbackReason 없음", async () => {
+    const responder: AskResponder = {
+      respond: async () => ({ characterId: "tori", questionId: "free", answerText: ["다섯 개쯤 있어."], source: "llm", latencyMs: 900 }),
+    };
+    const { sim, rec, voice } = setup({ responder, responderKind: "llm" });
+    act(sim, { type: "voiceStart" });
+    voice.start();
+    rec.cb!.onResult({ transcript: "집에 도토리 많아", alternatives: [] });
+    await flush();
+    const d = sim.logs.find((e) => e.event_type === "voice_result")!.detail!;
+    expect(d).toMatchObject({ responder: "llm", latencyMs: 900, matched: "c1.ask.tori.free" });
+    expect("fallbackReason" in d).toBe(false);
   });
 
   it("makeAsr가 null → voiceFail other 로그", () => {

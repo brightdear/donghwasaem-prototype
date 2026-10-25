@@ -270,6 +270,7 @@ function validateAsk(ask: unknown, path: string, err: (code: string, message: st
       const qp = `${cp}.questions[${qi}]`;
       if (!isObj(q)) return err("S_TYPE", "질문 형식 오류", qp);
       if (!isStr(q.id)) err("S_TYPE", "질문 id 필요", `${qp}.id`);
+      else if (q.id === "free") err("R10_ASK_QID_RESERVED", "질문 id 'free'는 준비 밖 질문용으로 예약됨", `${qp}.id`);
       else if (seen.has(q.id)) err("R10_ASK_QID_DUP", `질문 id 중복: ${q.id}`, `${qp}.id`);
       else seen.add(q.id);
       if (!isStr(q.text)) err("S_TYPE", "질문 text 필요", `${qp}.text`);

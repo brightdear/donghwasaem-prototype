@@ -5,9 +5,9 @@
  */
 import type Anthropic from "@anthropic-ai/sdk";
 import { containsForbidden } from "../report/filter";
-import { createClient, parseJsonReply, replyText } from "../report/llm";
+import { createClient, isTimeout, parseJsonReply, replyText } from "../report/llm";
 import type { AskBlock } from "../story/types";
-import { keywordResponder, type AskInput, type AskOutput, type AskResponder } from "./responder";
+import { keywordResponder, type AskFallbackReason, type AskInput, type AskOutput, type AskResponder } from "./responder";
 
 export const ASK_LLM_MODEL = "claude-haiku-5-5";
 export const ASK_LLM_TIMEOUT_MS = 6000; // 기획서 p95 6초 예산. 넘으면 키워드로 복구
@@ -70,44 +70,73 @@ export function buildAskRequest(input: AskInput, ask: AskBlock): Anthropic.Messa
 const charCount = (s: string) => s.replace(/\s/g, "").length;
 const sentenceCount = (s: string) => s.split(/[.!?]/).filter((x) => x.trim() !== "").length;
 
-/** 순수 함수. 모델 출력 원문을 검증해 AskOutput으로. 하나라도 어긋나면 null(→ fallback). */
-export function validateAskReply(raw: string, ask: AskBlock, selectedCharacterId: string | null): AskOutput | null {
+type Checked = { ok: AskOutput } | { reason: "parse_error" | "invalid" | "filtered" };
+
+/** 검증 + 실패 이유. JSON이 아니면 parse_error, 형식·인물·질문 id·길이·문장 수 위반은 invalid, 금지어·숫자·이모지는 filtered */
+function checkAskReply(raw: string, ask: AskBlock, selectedCharacterId: string | null): Checked {
   const data = parseJsonReply(raw);
-  if (typeof data !== "object" || data === null || Array.isArray(data)) return null;
+  if (typeof data !== "object" || data === null || Array.isArray(data)) return { reason: "parse_error" };
+  const invalid: Checked = { reason: "invalid" };
   const { characterId, questionId, answer } = data as Record<string, unknown>;
-  if (typeof characterId !== "string") return null;
+  if (typeof characterId !== "string") return invalid;
   const ch = ask.characters.find((c) => c.id === characterId);
-  if (!ch) return null;
-  if (selectedCharacterId !== null && characterId !== selectedCharacterId) return null;
+  if (!ch) return invalid;
+  if (selectedCharacterId !== null && characterId !== selectedCharacterId) return invalid;
   let qid: string;
   if (questionId === null || questionId === undefined) qid = "free";
   else if (typeof questionId === "string" && ch.questions.some((q) => q.id === questionId)) qid = questionId;
-  else return null;
-  if (typeof answer !== "string") return null;
+  else return invalid;
+  if (typeof answer !== "string") return invalid;
   const text = answer.trim();
   const n = charCount(text);
-  if (n < MIN_CHARS || n > MAX_CHARS) return null;
-  if (sentenceCount(text) > MAX_SENTENCES) return null;
-  if (containsForbidden(text).hit) return null; // 금지어·숫자·이모지
-  return { characterId, questionId: qid, answerText: [text] };
+  if (n < MIN_CHARS || n > MAX_CHARS) return invalid;
+  if (sentenceCount(text) > MAX_SENTENCES) return invalid;
+  if (containsForbidden(text).hit) return { reason: "filtered" }; // 금지어·숫자·이모지
+  return { ok: { characterId, questionId: qid, answerText: [text], source: "llm" } };
+}
+
+/** 순수 함수. 모델 출력 원문을 검증해 AskOutput(source "llm")으로. 하나라도 어긋나면 null(→ fallback). */
+export function validateAskReply(raw: string, ask: AskBlock, selectedCharacterId: string | null): AskOutput | null {
+  const c = checkAskReply(raw, ask, selectedCharacterId);
+  return "ok" in c ? c.ok : null;
 }
 
 export function createLlmResponder(apiKey: string, deps: LlmAskDeps = {}): AskResponder {
   const fallback = deps.fallback ?? keywordResponder;
+  const now = deps.now ?? (() => Date.now());
   let client: Anthropic | null = deps.client ?? null;
+
+  /** fallback 결과를 키워드 대답으로 표시하고 실패 이유(와 잰 경우 지연)를 붙인다. fallback도 못 맞추면 null */
+  async function viaFallback(
+    input: AskInput,
+    ask: AskBlock,
+    reason: AskFallbackReason,
+    latencyMs?: number,
+  ): Promise<AskOutput | null> {
+    const out = await fallback.respond(input, ask);
+    if (out === null) return null;
+    return { ...out, source: "keyword", fallbackReason: reason, ...(latencyMs !== undefined ? { latencyMs } : {}) };
+  }
+
   return {
     async respond(input, ask) {
-      if (!apiKey) return fallback.respond(input, ask);
+      if (!apiKey) return viaFallback(input, ask, "no_key");
+      const started = now();
+      let res: Anthropic.Message;
       try {
         client ??= createClient(apiKey, ASK_LLM_TIMEOUT_MS);
-        const res = await client.messages.create(buildAskRequest(input, ask));
-        if (res.stop_reason === "refusal" || res.stop_reason === "max_tokens") return fallback.respond(input, ask);
-        const out = validateAskReply(replyText(res), ask, input.characterId);
-        return out ?? (await fallback.respond(input, ask));
-      } catch {
-        // 타임아웃·HTTP 오류 등 모두 키워드 매칭으로 복구
-        return fallback.respond(input, ask);
+        res = await client.messages.create(buildAskRequest(input, ask));
+      } catch (err) {
+        // 타임아웃·HTTP 오류 모두 키워드 매칭으로 복구
+        return viaFallback(input, ask, isTimeout(err) ? "timeout" : "http_error", now() - started);
       }
+      const latencyMs = now() - started;
+      if (res.stop_reason === "refusal" || res.stop_reason === "max_tokens") {
+        return viaFallback(input, ask, res.stop_reason, latencyMs);
+      }
+      const c = checkAskReply(replyText(res), ask, input.characterId);
+      if ("reason" in c) return viaFallback(input, ask, c.reason, latencyMs);
+      return { ...c.ok, latencyMs };
     },
   };
 }

@@ -16,11 +16,28 @@ export interface AskInput {
   storyTitle?: string;
 }
 
+/** LLM 응답기가 키워드로 넘어간 이유 */
+export type AskFallbackReason =
+  | "no_key"
+  | "timeout"
+  | "http_error"
+  | "refusal"
+  | "max_tokens"
+  | "parse_error"
+  | "invalid"
+  | "filtered";
+
 export interface AskOutput {
   characterId: string;
   /** 준비된 질문 id, 또는 준비 밖 질문에 LLM이 대답했으면 "free" */
   questionId: string;
   answerText: string[];
+  /** 실제로 대답을 만든 응답기 */
+  source: "llm" | "keyword";
+  /** LLM이 실패해 키워드로 대답했을 때 그 이유 */
+  fallbackReason?: AskFallbackReason;
+  /** LLM 호출 소요(ms). 실패한 호출도 잰 경우 남긴다 */
+  latencyMs?: number;
 }
 
 export interface AskResponder {
@@ -36,6 +53,6 @@ export const keywordResponder: AskResponder = {
       .find((c) => c.id === hit.characterId)
       ?.questions.find((q) => q.id === hit.questionId);
     if (question === undefined) return null;
-    return { characterId: hit.characterId, questionId: hit.questionId, answerText: [...question.answer] };
+    return { characterId: hit.characterId, questionId: hit.questionId, answerText: [...question.answer], source: "keyword" };
   },
 };

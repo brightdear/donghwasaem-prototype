@@ -85,7 +85,7 @@ function parseReportText(raw: string): ReportText | null {
   return { curiosity, choices, comprehension, prompts: prompts as string[] };
 }
 
-function isTimeout(err: unknown): boolean {
+export function isTimeout(err: unknown): boolean {
   if (err instanceof Anthropic.APIConnectionTimeoutError) return true;
   return err instanceof Error && err.name === "AbortError";
 }

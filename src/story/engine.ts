@@ -753,6 +753,8 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
           alternatives: action.alternatives,
           matched: matchedId,
           responder: action.responder ?? "keyword",
+          ...(action.fallbackReason !== undefined ? { fallbackReason: action.fallbackReason } : {}),
+          ...(action.latencyMs !== undefined ? { latencyMs: action.latencyMs } : {}),
         },
       });
       if (free) {

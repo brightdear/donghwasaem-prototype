@@ -239,8 +239,12 @@ export type Action =
       alternatives: string[];
       /** questionId "free" = 준비 밖 질문에 LLM이 지은 대답(answerText) */
       matched: { characterId: string; questionId: string; answerText: string[] } | null;
-      /** 어느 응답기가 맞췄는지(voice_result 로그용). 기본 "keyword" */
+      /** 실제로 대답한 응답기(voice_result 로그용). 못 맞췄으면 설정된 응답기. 기본 "keyword" */
       responder?: "llm" | "keyword";
+      /** LLM이 실패해 키워드로 대답했을 때 그 이유 */
+      fallbackReason?: string;
+      /** LLM 호출 소요(ms) */
+      latencyMs?: number;
       at: number;
     }
   | { type: "voiceFail"; reason: string; at: number };

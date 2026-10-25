@@ -222,6 +222,12 @@ describe("말로 묻기", () => {
     expect(sim.logs.some((e) => e.event_type === "ask_free")).toBe(false);
     expect(view(sim)).toMatchObject({ screen: "ask", voiceFails: 1 });
   });
+  it("responder keyword + fallbackReason timeout + latencyMs → voice_result.detail에 모두", () => {
+    const sim = toC1();
+    act(sim, { type: "voiceStart" });
+    act(sim, { type: "voiceResult", transcript: "토리야 몇 개야", alternatives: [], matched: M, responder: "keyword", fallbackReason: "timeout", latencyMs: 6001 });
+    expect(sim.logs.find((e) => e.event_type === "voice_result")).toMatchObject({ detail: { matched: "c1.ask.tori.q1", responder: "keyword", fallbackReason: "timeout", latencyMs: 6001 } });
+  });
   it("responder 없으면 voice_result.detail.responder는 keyword", () => {
     const sim = toC1();
     act(sim, { type: "voiceStart" });
