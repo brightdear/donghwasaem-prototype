@@ -138,16 +138,22 @@ export interface Settings {
   manualReading: boolean;
   /** 아이 화면 장면 그림·오버레이 표시(분기 조건과 독립) */
   pictures: boolean;
+  /** 묻기 층 토글(원작 되묻기). 분기 조건과 독립 */
+  askLayer: boolean;
+  /** 음성 질문 토글. `voice`(낭독 목소리)와 다름 */
+  voiceAsk: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   apiKey: null,
-  defaultConditions: { branching: true, mismatch: "rewind", askWhy: true },
+  defaultConditions: { branching: true, mismatch: "converge", askWhy: true },
   confirmMode: "double",
   ttsRate: 0.9,
   voiceURI: null,
   manualReading: false,
   pictures: true,
+  askLayer: true,
+  voiceAsk: true,
 };
 
 export const STORAGE_KEYS = {

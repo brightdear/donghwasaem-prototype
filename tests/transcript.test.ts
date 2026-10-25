@@ -19,9 +19,9 @@ const count = (hay: string, needle: string) => hay.split(needle).length - 1;
 
 for (const story of stories) {
   describe(`대본 — ${story.id}`, () => {
-    it("fixture 경로 수: off 1, converge·altEnding 12, rewind 63", () => {
+    it("fixture 경로 수: off 1, converge 12, rewind 63", () => {
       const n = (c: Conditions) => enumeratePaths(story, c).length;
-      expect(VALID_CONDITIONS.map(n)).toEqual([1, 63, 63, 12, 12, 12, 12]);
+      expect(VALID_CONDITIONS.map(n)).toEqual([1, 63, 63, 12, 12]);
     });
 
     for (const c of VALID_CONDITIONS) {

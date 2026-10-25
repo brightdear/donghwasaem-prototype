@@ -143,15 +143,13 @@ export interface Conditions {
   askWhy: boolean | "na"; // branching=false면 "na"
 }
 
-/** 유효 조합 7개 (3.1). 리허설·transcript 열거에 사용 */
+/** 유효 조합 5개 (3.1; altEnding은 2026-10-25 UI에서 제거, 타입·엔진은 유지). 리허설·transcript 열거에 사용 */
 export const VALID_CONDITIONS: readonly Conditions[] = [
   { branching: false, mismatch: "na", askWhy: "na" },
   { branching: true, mismatch: "rewind", askWhy: true },
   { branching: true, mismatch: "rewind", askWhy: false },
   { branching: true, mismatch: "converge", askWhy: true },
   { branching: true, mismatch: "converge", askWhy: false },
-  { branching: true, mismatch: "altEnding", askWhy: true },
-  { branching: true, mismatch: "altEnding", askWhy: false },
 ];
 
 /** 조합 슬러그 (파일명·로그 표시용): off | rewind-why | rewind-nowhy | ... */

@@ -13,6 +13,7 @@ import { auditSession } from "./log/audit";
 import { toCsv, toJson } from "./log/csv";
 import { downloadText, exportFilename } from "./log/export";
 import { DEFAULT_SETTINGS, STORAGE_KEYS, type SessionMeta, type Settings } from "./log/types";
+import { parseSettings } from "./log/settings";
 import { createTts, type Tts, type TtsEvent } from "./tts";
 import { summarize } from "./report/summarize";
 import { generateReport } from "./report/llm";
@@ -30,27 +31,7 @@ const nowIso = () => new Date().toISOString();
 function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.settings);
-    const p = (raw ? JSON.parse(raw) : {}) as Record<string, unknown>;
-    const d = DEFAULT_SETTINGS;
-    const dc = p.defaultConditions as Record<string, unknown> | null | undefined;
-    const dcOk =
-      !!dc &&
-      typeof dc === "object" &&
-      typeof dc.branching === "boolean" &&
-      (dc.mismatch === "rewind" || dc.mismatch === "converge" || dc.mismatch === "altEnding" || dc.mismatch === "na") &&
-      (typeof dc.askWhy === "boolean" || dc.askWhy === "na");
-    return {
-      apiKey: typeof p.apiKey === "string" ? p.apiKey : d.apiKey,
-      ttsRate:
-        typeof p.ttsRate === "number" && Number.isFinite(p.ttsRate) && p.ttsRate >= 0.5 && p.ttsRate <= 1.5
-          ? p.ttsRate
-          : d.ttsRate,
-      voiceURI: typeof p.voiceURI === "string" ? p.voiceURI : d.voiceURI,
-      confirmMode: p.confirmMode === "double" || p.confirmMode === "single" ? p.confirmMode : d.confirmMode,
-      manualReading: typeof p.manualReading === "boolean" ? p.manualReading : d.manualReading,
-      pictures: typeof p.pictures === "boolean" ? p.pictures : d.pictures,
-      defaultConditions: dcOk ? (dc as unknown as Settings["defaultConditions"]) : { ...d.defaultConditions },
-    };
+    return parseSettings(raw ? JSON.parse(raw) : {});
   } catch {
     return { ...DEFAULT_SETTINGS };
   }

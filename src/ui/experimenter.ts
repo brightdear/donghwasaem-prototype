@@ -189,7 +189,7 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
   cond.appendChild(brRow);
 
   const mm = el("select");
-  for (const k of ["rewind", "converge", "altEnding"] as MismatchKind[]) {
+  for (const k of ["rewind", "converge"] as MismatchKind[]) {
     const o = el("option", undefined, MISMATCH_LABEL[k]);
     o.value = k;
     mm.appendChild(o);
