@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { matchQuestion, normalize } from "../src/ask/matcher";
 import { keywordResponder } from "../src/ask/responder";
-import type { AskBlock, AskCharacter } from "../src/story/types";
+import type { AskBlock, AskCharacter, Story } from "../src/story/types";
+import heungbuStory from "../src/data/heungbu.json";
 
 const swallow: AskCharacter = { id: "swallow", name: "제비", unmatched: "u", unmatchedFinal: "f", questions: [
   { id: "q1", text: "왜 못 날아?", keywords: ["못 날", "왜 못", "안 날", "날개", "날지"], answer: ["다리를 다쳤어."] },
@@ -57,4 +58,16 @@ describe("keywordResponder", () => {
   it("못 맞추면 null", async () => {
     await expect(keywordResponder.respond({ storyId: "h", choicePointId: "c1", characterId: null, transcript: "안녕", alternatives: [] }, ask)).resolves.toBeNull();
   });
+});
+
+describe("실제 흥부 c1·c3 묻기 블록", () => {
+  const h = heungbuStory as unknown as Story;
+  const c1 = h.choicePoints[0]!.ask!; const c3 = h.choicePoints[2]!.ask!;
+  it("제비야 왜 못 날아 → swallow.q1", () => expect(matchQuestion("제비야 왜 못 날아", [], c1.characters, null)).toMatchObject({ characterId: "swallow", questionId: "q1" }));
+  it("흥부야 어떻게 할 거야 → heungbu.q1", () => expect(matchQuestion("흥부야 어떻게 할 거야", [], c1.characters, null)).toMatchObject({ characterId: "heungbu", questionId: "q1" }));
+  it("왜 왔어 → nolbu.q1, 안 추워 → nolbu.q2", () => {
+    expect(matchQuestion("놀부 아저씨 왜 왔어요", [], c3.characters, null)).toMatchObject({ characterId: "nolbu", questionId: "q1" });
+    expect(matchQuestion("안 추워?", [], c3.characters, null)).toMatchObject({ characterId: "nolbu", questionId: "q2" });
+  });
+  it("c2는 음성 없음", () => expect(h.choicePoints[1]!.ask!.voice).toBe(false));
 });
