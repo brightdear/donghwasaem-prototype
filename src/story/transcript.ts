@@ -3,7 +3,7 @@
  * 엔진을 스텁 TTS(모든 speak에 즉시 ttsDone ended)로 돌려 경로별 낭독 전문과 분량을 낸다.
  * why 보기는 첫 보기로 고정, 이해 질문은 정답을 고른다.
  */
-import type { Conditions, Screen, SpeakKind, Story } from "./types";
+import type { Conditions, EngineSettings, Screen, SpeakKind, Story } from "./types";
 import { currentView, init, isFinished, step, type EngineState } from "./engine";
 import type { Effect } from "./types";
 
@@ -89,24 +89,43 @@ export function enumeratePaths(story: Story, conditions: Conditions): PathSpec[]
   return combos.map((choicesPerPoint) => ({ label: pathLabel(story, conditions, choicesPerPoint), choicesPerPoint }));
 }
 
-export function renderTranscript(story: Story, conditions: Conditions, choicesPerPoint: string[][]): Transcript {
+/** 묻기 추가 글자 수: 지점별 안내 + 모든 인물 대답 중 가장 긴 2개(ask 없는 지점 제외) */
+export function askChars(story: Story): { perPoint: { cpId: string; chars: number }[]; total: number } {
+  const perPoint: { cpId: string; chars: number }[] = [];
+  for (const cp of story.choicePoints) {
+    if (!cp.ask) continue;
+    const lens = cp.ask.characters
+      .flatMap((ch) => ch.questions.map((q) => countChars(q.answer.join(""))))
+      .sort((a, b) => b - a);
+    perPoint.push({ cpId: cp.id, chars: countChars(cp.ask.intro ?? "") + (lens[0] ?? 0) + (lens[1] ?? 0) });
+  }
+  return { perPoint, total: perPoint.reduce((a, p) => a + p.chars, 0) };
+}
+
+export function renderTranscript(
+  story: Story,
+  conditions: Conditions,
+  choicesPerPoint: string[][],
+  settings: EngineSettings = { manualReading: false, confirmMode: "double", askLayer: false, voiceAsk: false },
+): Transcript {
   const decisions = choicesPerPoint.flat();
   let di = 0;
   const lines: TranscriptLine[] = [];
   const nodeIds: string[] = [];
   let t = 0;
 
-  let r = init(story, conditions, { manualReading: false, confirmMode: "double" }, t);
+  let r = init(story, conditions, settings, t);
   let state: EngineState = r.state;
 
   const absorb = (effects: Effect[]) => {
     const queue = [...effects];
     while (queue.length) {
       const e = queue.shift()!;
-      if (e.type === "log" && e.event.event_type === "screen_enter" && e.event.node_id) nodeIds.push(e.event.node_id);
+      if (e.type === "log" && e.event.event_type === "screen_enter" && e.event.node_id && !e.event.node_id.endsWith(".ask")) nodeIds.push(e.event.node_id);
       if (e.type === "speak") {
         const v = currentView(state);
-        lines.push({ nodeId: "nodeId" in v ? v.nodeId : "", screen: v.screen, kind: e.kind, text: e.text });
+        // 묻기 안내는 대본·분량에 넣지 않는다(askChars가 따로 센다)
+        if (v.screen !== "ask") lines.push({ nodeId: "nodeId" in v ? v.nodeId : "", screen: v.screen, kind: e.kind, text: e.text });
         const d = step(state, { type: "ttsDone", utteranceId: e.utteranceId, outcome: "ended", at: ++t });
         state = d.state;
         queue.push(...d.effects);
@@ -123,6 +142,8 @@ export function renderTranscript(story: Story, conditions: Conditions, choicesPe
       const id = decisions[di++];
       if (id === undefined) throw new Error(`선택 열이 모자람: ${v.nodeId}`);
       r = step(state, { type: "confirm", optionId: id, at: t });
+    } else if (v.screen === "ask") {
+      r = step(state, { type: "askSkip", at: t });
     } else if (v.screen === "why") {
       r = step(state, { type: "answerWhy", optionId: v.options[0]!.id, at: t });
     } else if (v.screen === "comprehension") {

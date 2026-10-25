@@ -24,7 +24,16 @@ export type EventType =
   | "dropout"
   | "report_view"
   | "report_source"
-  | "asked_check";
+  | "asked_check"
+  | "ask_character"
+  | "ask_listen"
+  | "ask_confirm"
+  | "ask_repeat"
+  | "ask_free" // 준비 밖 음성 질문에 LLM 대답(횟수에 세지 않음)
+  | "ask_skip"
+  | "voice_start"
+  | "voice_result"
+  | "voice_fail";
 
 export type RtBasis = "tts_end" | "shown" | "watchdog";
 export type ReportSource = "llm" | "template";
@@ -118,6 +127,12 @@ export interface SessionMeta {
   started_epoch_ms: number;
   status: SessionStatus;
   voice?: string | null;
+  /** 묻기 층 사용 여부 */
+  askLayer?: boolean;
+  /** 음성으로 묻기 사용 여부 */
+  voiceAsk?: boolean;
+  /** 음성 질문에 LLM 응답기를 썼는지(키가 있고 토글이 켜졌을 때) */
+  askLlm?: boolean;
   /** 장면 그림 표시 여부. 이 필드가 없는 이전 세션은 그림 기능 전(그림 없음) */
   pictures?: boolean;
   exported?: boolean; // 내보내기 여부(미내보내기 세션 수 배지용)
@@ -138,16 +153,25 @@ export interface Settings {
   manualReading: boolean;
   /** 아이 화면 장면 그림·오버레이 표시(분기 조건과 독립) */
   pictures: boolean;
+  /** 묻기 층 토글(원작 되묻기). 분기 조건과 독립 */
+  askLayer: boolean;
+  /** 음성 질문 토글. `voice`(낭독 목소리)와 다름 */
+  voiceAsk: boolean;
+  /** 음성 질문에 LLM 응답기 사용(키 필요). 기본 꺼짐 */
+  askLlm: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   apiKey: null,
-  defaultConditions: { branching: true, mismatch: "rewind", askWhy: true },
+  defaultConditions: { branching: true, mismatch: "converge", askWhy: true },
   confirmMode: "double",
   ttsRate: 0.9,
   voiceURI: null,
   manualReading: false,
   pictures: true,
+  askLayer: true,
+  voiceAsk: true,
+  askLlm: false,
 };
 
 export const STORAGE_KEYS = {

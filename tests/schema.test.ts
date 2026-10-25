@@ -218,3 +218,48 @@ describe("R9 art 섹션(선택)", () => {
     expect(codes(s)).toContain("R9_ART");
   });
 });
+
+const ASK_OK = {
+  voice: true, maxAsks: 2, intro: "토리한테 물어볼까?", sceneLabel: "도토리를 주운 장면",
+  characters: [
+    { id: "tori", name: "토리", questions: [
+      { id: "q1", text: "도토리 몇 개야?", keywords: ["몇 개"], answer: ["세 개야."], clue: "tori_q1" },
+      { id: "q2", text: "배고파?", keywords: ["배고"], answer: ["조금 고파."] },
+    ], unmatched: "응? 다시 말해 줄래?", unmatchedFinal: "여기서 골라 줄래?" },
+  ],
+};
+const withAsk = (mut?: (a: Any) => void) => { const s = clone(); s.choicePoints[0].ask = JSON.parse(JSON.stringify(ASK_OK)); mut?.(s.choicePoints[0].ask); return s; };
+
+describe("R10 ask", () => {
+  it("올바른 ask 통과", () => expect(codes(withAsk())).toEqual([]));
+  it("characters 0명·3명 → R10_ASK_CHARACTERS", () => {
+    expect(codes(withAsk((a) => (a.characters = [])))).toContain("R10_ASK_CHARACTERS");
+    expect(codes(withAsk((a) => (a.characters = [a.characters[0], a.characters[0], a.characters[0]])))).toContain("R10_ASK_CHARACTERS");
+  });
+  it("questions 1개 → R10_ASK_QUESTIONS", () => expect(codes(withAsk((a) => a.characters[0].questions.pop()))).toContain("R10_ASK_QUESTIONS"));
+  it("질문 id 'free'(예약) → R10_ASK_QID_RESERVED", () => expect(codes(withAsk((a) => (a.characters[0].questions[0].id = "free")))).toContain("R10_ASK_QID_RESERVED"));
+  it("질문 id 중복 → R10_ASK_QID_DUP", () => expect(codes(withAsk((a) => (a.characters[0].questions[1].id = "q1")))).toContain("R10_ASK_QID_DUP"));
+  it("keywords 없음·1자 → R10_ASK_KEYWORDS", () => {
+    expect(codes(withAsk((a) => (a.characters[0].questions[0].keywords = [])))).toContain("R10_ASK_KEYWORDS");
+    expect(codes(withAsk((a) => (a.characters[0].questions[0].keywords = ["왜 "])))).toContain("R10_ASK_KEYWORDS");
+  });
+  it("answer 0개·3개 → R10_ASK_ANSWER", () => {
+    expect(codes(withAsk((a) => (a.characters[0].questions[0].answer = [])))).toContain("R10_ASK_ANSWER");
+    expect(codes(withAsk((a) => (a.characters[0].questions[0].answer = ["a", "b", "c"])))).toContain("R10_ASK_ANSWER");
+  });
+  it("voice true인데 unmatched 없음 → R10_ASK_UNMATCHED; voice false면 없어도 됨", () => {
+    expect(codes(withAsk((a) => delete a.characters[0].unmatchedFinal))).toContain("R10_ASK_UNMATCHED");
+    expect(codes(withAsk((a) => { a.voice = false; delete a.characters[0].unmatched; delete a.characters[0].unmatchedFinal; }))).toEqual([]);
+  });
+  it("maxAsks 0·4·1.5 → R10_ASK_MAXASKS", () => {
+    for (const v of [0, 4, 1.5]) expect(codes(withAsk((a) => (a.maxAsks = v)))).toContain("R10_ASK_MAXASKS");
+  });
+  it("대답에 금지어가 있으면 R7", () => expect(codes(withAsk((a) => (a.characters[0].questions[0].answer = ["점수가 올랐어."])))).toContain("R7_FORBIDDEN_WORD"));
+  it("art.pages가 대답 노드를 가리킬 수 있다", () => {
+    const s = withAsk();
+    s.art.pages = { "c1.ask.tori.q1": ["x.webp"] };
+    expect(codes(s)).toEqual([]);
+    s.art.pages = { "c1.ask.tori.q1": ["x.webp", "y.webp"] };
+    expect(codes(s)).toContain("R9_PAGE");
+  });
+});

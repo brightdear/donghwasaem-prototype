@@ -13,10 +13,15 @@ import { auditSession } from "./log/audit";
 import { toCsv, toJson } from "./log/csv";
 import { downloadText, exportFilename } from "./log/export";
 import { DEFAULT_SETTINGS, STORAGE_KEYS, type SessionMeta, type Settings } from "./log/types";
+import { parseSettings } from "./log/settings";
 import { createTts, type Tts, type TtsEvent } from "./tts";
-import { summarize } from "./report/summarize";
+import { saidByAsk, summarize } from "./report/summarize";
 import { generateReport } from "./report/llm";
 import { createRunner, lateEvent, ttsEventToAction, type Runner } from "./ui/runner";
+import { createAsr, isAsrSupported } from "./asr";
+import { keywordResponder } from "./ask/responder";
+import { createLlmResponder } from "./ask/llm";
+import { askVoiceOf, createVoiceController } from "./ui/voice";
 import { renderExperimenter, type ExperimenterDeps } from "./ui/experimenter";
 import { renderChild } from "./ui/child";
 import { resolveArt, type ResolvedArt } from "./ui/art";
@@ -30,27 +35,7 @@ const nowIso = () => new Date().toISOString();
 function loadSettings(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.settings);
-    const p = (raw ? JSON.parse(raw) : {}) as Record<string, unknown>;
-    const d = DEFAULT_SETTINGS;
-    const dc = p.defaultConditions as Record<string, unknown> | null | undefined;
-    const dcOk =
-      !!dc &&
-      typeof dc === "object" &&
-      typeof dc.branching === "boolean" &&
-      (dc.mismatch === "rewind" || dc.mismatch === "converge" || dc.mismatch === "altEnding" || dc.mismatch === "na") &&
-      (typeof dc.askWhy === "boolean" || dc.askWhy === "na");
-    return {
-      apiKey: typeof p.apiKey === "string" ? p.apiKey : d.apiKey,
-      ttsRate:
-        typeof p.ttsRate === "number" && Number.isFinite(p.ttsRate) && p.ttsRate >= 0.5 && p.ttsRate <= 1.5
-          ? p.ttsRate
-          : d.ttsRate,
-      voiceURI: typeof p.voiceURI === "string" ? p.voiceURI : d.voiceURI,
-      confirmMode: p.confirmMode === "double" || p.confirmMode === "single" ? p.confirmMode : d.confirmMode,
-      manualReading: typeof p.manualReading === "boolean" ? p.manualReading : d.manualReading,
-      pictures: typeof p.pictures === "boolean" ? p.pictures : d.pictures,
-      defaultConditions: dcOk ? (dc as unknown as Settings["defaultConditions"]) : { ...d.defaultConditions },
-    };
+    return parseSettings(raw ? JSON.parse(raw) : {});
   } catch {
     return { ...DEFAULT_SETTINGS };
   }
@@ -160,6 +145,11 @@ async function boot(root: HTMLElement): Promise<void> {
         status: "open",
         voice: voiceName,
       };
+      m.askLayer = cfg.askLayer;
+      m.voiceAsk = cfg.voiceAsk;
+      // LLM 응답기는 키가 있고 토글이 켜졌을 때만. 실패하면 키워드 매칭으로 복구
+      const useAskLlm = !!settings.apiKey && cfg.askLlm;
+      m.askLlm = useAskLlm;
       const created = store.createSession(m);
       if (!created.ok) {
         deps.storageWarning = STORAGE_FULL_MSG;
@@ -178,12 +168,17 @@ async function boot(root: HTMLElement): Promise<void> {
       const renderView = (v: Parameters<typeof renderChild>[1]) => {
         const art = cfg.pictures ? resolveArt(story, v, lastArt, cfg.conditions) : null;
         lastArt = art;
-        renderChild(root, v, r.dispatch, art);
+        renderChild(root, v, childDispatch, art);
       };
       const r = createRunner({
         story,
         conditions: cfg.conditions,
-        engineSettings: { manualReading: cfg.manualReading, confirmMode: cfg.confirmMode },
+        engineSettings: {
+          manualReading: cfg.manualReading,
+          confirmMode: cfg.confirmMode,
+          askLayer: cfg.askLayer,
+          voiceAsk: cfg.voiceAsk && isAsrSupported(),
+        },
         meta: m,
         store: runnerStore,
         tts: cfg.manualReading ? null : tts,
@@ -191,7 +186,23 @@ async function boot(root: HTMLElement): Promise<void> {
         nowIso,
         render: renderView,
         onFinished: () => onFinished(story),
+        asrSupported: isAsrSupported(),
       });
+      // 마이크: 엔진이 voiceStart로 듣기 상태가 된 뒤 인식을 시작한다
+      const voice = createVoiceController({
+        story,
+        getState: () => r.getState(),
+        dispatch: (a) => r.dispatch(a),
+        makeAsr: (cb) => (isAsrSupported() ? createAsr({ lang: "ko-KR", timeoutMs: 6000, ...cb }) : null),
+        responder: useAskLlm ? createLlmResponder(settings.apiKey as string, { fallback: keywordResponder }) : keywordResponder,
+        responderKind: useAskLlm ? "llm" : "keyword",
+      });
+      const childDispatch: Parameters<typeof renderChild>[2] = (a) => {
+        // 엔진이 이번 dispatch로 idle → listening이 됐을 때만 인식을 시작한다(무시된 voiceStart는 건너뜀)
+        const before = a.type === "voiceStart" ? askVoiceOf(r.getState()) : null;
+        r.dispatch(a);
+        if (before === "idle" && askVoiceOf(r.getState()) === "listening") voice.start();
+      };
       runner = r;
       r.start();
     },
@@ -252,7 +263,8 @@ async function boot(root: HTMLElement): Promise<void> {
           showExperimenter();
           return;
         }
-        const result = await generateReport(summarize(record, story), settings.apiKey);
+        const input = summarize(record, story);
+        const result = await generateReport(input, settings.apiKey, { said: saidByAsk(record, story) });
         if (stale()) return;
         late({
           event_type: "report_source",

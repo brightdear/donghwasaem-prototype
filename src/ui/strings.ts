@@ -12,6 +12,11 @@ export const STRINGS = {
   start: "시작",
   parentHandoff: "부모님께 넘겨주세요",
   askedCheck: "물어봤어요",
+  askIntroDefault: "물어보고 싶은 게 있어?",
+  micLabel: "말로 물어볼래",
+  listening: "듣고 있어",
+  voiceUnmatched: "음, 잘 못 들었어. 다시 말해 줄래?",
+  voiceUnmatchedFinal: "그럼 여기서 골라 줄래?",
 } as const;
 
 export type StringKey = keyof typeof STRINGS;

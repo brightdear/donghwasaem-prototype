@@ -39,6 +39,8 @@ export function renderReport(
   root.textContent = "";
   const wrap = el("div", "report");
   wrap.appendChild(el("h1", undefined, "오늘의 동화 리포트"));
+  wrap.appendChild(el("h2", undefined, "오늘 궁금해한 것"));
+  wrap.appendChild(el("p", undefined, result.text.curiosity));
   wrap.appendChild(el("p", undefined, result.text.choices));
   wrap.appendChild(el("p", undefined, result.text.comprehension));
 

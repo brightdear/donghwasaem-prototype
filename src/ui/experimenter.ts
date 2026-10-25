@@ -22,6 +22,9 @@ export interface ExperimenterDeps {
     confirmMode: "double" | "single";
     manualReading: boolean;
     pictures: boolean;
+    askLayer: boolean;
+    voiceAsk: boolean;
+    askLlm: boolean;
   }): void;
   onExportCsv(): void;
   onExportJson(): void;
@@ -69,6 +72,9 @@ interface FormState {
   confirmMode: "double" | "single";
   manualReading: boolean;
   pictures: boolean;
+  askLayer: boolean;
+  voiceAsk: boolean;
+  askLlm: boolean;
   keyDraft: string;
 }
 
@@ -88,6 +94,9 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
     confirmMode: deps.settings.confirmMode,
     manualReading: deps.settings.manualReading,
     pictures: deps.settings.pictures,
+    askLayer: deps.settings.askLayer,
+    voiceAsk: deps.settings.voiceAsk,
+    askLlm: deps.settings.askLlm,
     keyDraft: "",
   };
   kept = state;
@@ -189,7 +198,7 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
   cond.appendChild(brRow);
 
   const mm = el("select");
-  for (const k of ["rewind", "converge", "altEnding"] as MismatchKind[]) {
+  for (const k of ["rewind", "converge"] as MismatchKind[]) {
     const o = el("option", undefined, MISMATCH_LABEL[k]);
     o.value = k;
     mm.appendChild(o);
@@ -226,6 +235,44 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
   picRow.appendChild(pic);
   picRow.appendChild(el("span", undefined, "그림 보이기"));
   cond.appendChild(picRow);
+
+  // 묻기 층·음성 질문도 분기 조건과 독립(이야기에 ask 블록이 있는 선택점에서만 나타난다)
+  const askRow = el("label", "radio-row");
+  const ask = el("input");
+  ask.type = "checkbox";
+  ask.checked = state.askLayer;
+  ask.addEventListener("change", () => {
+    state.askLayer = ask.checked;
+    patchSettings({ askLayer: ask.checked });
+  });
+  askRow.appendChild(ask);
+  askRow.appendChild(el("span", undefined, "묻기 층 (선택 전 인물에게 질문)"));
+  cond.appendChild(askRow);
+
+  const vaRow = el("label", "radio-row");
+  const va = el("input");
+  va.type = "checkbox";
+  va.checked = state.voiceAsk;
+  va.addEventListener("change", () => {
+    state.voiceAsk = va.checked;
+    patchSettings({ voiceAsk: va.checked });
+  });
+  vaRow.appendChild(va);
+  vaRow.appendChild(el("span", undefined, "음성 질문 (마이크 버튼)"));
+  cond.appendChild(vaRow);
+
+  // 음성 질문에 LLM 대답: 키가 있을 때만 실제로 쓰고, 실패하면 키워드 매칭으로 돌아간다
+  const llmRow = el("label", "radio-row");
+  const llm = el("input");
+  llm.type = "checkbox";
+  llm.checked = state.askLlm;
+  llm.addEventListener("change", () => {
+    state.askLlm = llm.checked;
+    patchSettings({ askLlm: llm.checked });
+  });
+  llmRow.appendChild(llm);
+  llmRow.appendChild(el("span", undefined, "음성 대답 LLM (키 필요)"));
+  cond.appendChild(llmRow);
   form.appendChild(cond);
 
   const mrRow = el("label", "radio-row");
@@ -340,6 +387,9 @@ export function renderExperimenter(root: HTMLElement, deps: ExperimenterDeps): v
         confirmMode: advanced ? state.confirmMode : "double",
         manualReading,
         pictures: state.pictures,
+        askLayer: state.askLayer,
+        voiceAsk: state.voiceAsk,
+        askLlm: state.askLlm,
       });
     }),
   );

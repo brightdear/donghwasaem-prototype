@@ -36,25 +36,31 @@ npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ �
   - R5 `refersTo` 는 척추 `passage` id만, `answerFact`(배열이면 각 원소)는 참조한 passage 안에 문자열로 존재
   - R6 `endings.original`·`endings.alt` 둘 다 존재, `parentPrompts` 2개 이상
   - R7 모든 텍스트에 이모지·금지어 없음
+  - R10 (`ask`가 있을 때) `characters` 1~2, `questions` 2~3, `keywords` 1개 이상(각 2자 이상), `answer` 1~2문단, `voice` 면 `unmatched`·`unmatchedFinal` 필수, `maxAsks` 1~3, 질문 id `free` 는 예약어(음성 자유 질문 기록용)
   - R9 (`art` 섹션이 있을 때만) `motion` 값은 `fall`·`grow`·`fly_away`·`walk_in`·`walk_in_right`·`shiver`·`drift_down` 중 하나, `scene`·`scenes` 키는 실제 본문 노드 id, `page` 는 1~그 노드 문단 수, `x`·`y`·`size` 는 0~1
 - 페이지 규칙: `paragraphs`·`consequence`·`bridge` 배열의 원소 1개 = 아이 화면 1페이지 = 1~2문장(70자 이하, 작은따옴표 인용은 한 문장으로 셈). 페이지마다 낭독 후 '다음'. `tests/data.test.ts` 가 검사한다. R5는 passage 문단을 공백 하나로 이어 붙인 문자열에서 검사하므로 정답 사실이 페이지 경계를 넘어도 된다.
-- R8(의미 규칙): 척추 passage 는 직전 선택의 결과를 전제하지 않는다. 결과 의존 내용은 `consequence`/`bridge` 안에만 둔다. 정답 사실은 척추 passage 안에만 둔다.
+- R8(의미 규칙): 척추 passage 는 원작 선택지 `consequence` 까지의 사건을 전제할 수 있다. 다른 선택의 `consequence`·`bridge` 내용은 전제하지 않는다. 모든 경로가 원작 `consequence` 를 읽는다(다른 선택은 `bridge` 뒤에 원작 결과로 이어진다). 정답 사실은 척추 passage 안에만 둔다.
+- 조건은 5개 조합(분기 off / rewind·이유 있음·없음 / converge·이유 있음·없음)이다. `altEnding` 은 화면에서 고르지 않는다.
+- 묻기 층 설정(실험자 화면 설정, 세션 로그에 기록): `askLayer` 선택 전 카드로 묻기 켜기/끄기, `voiceAsk` 마이크로 말해서 묻기(브라우저 받아쓰기 지원 시), `askLlm` 준비 밖 질문을 LLM이 1~2문장으로 대답(API 키 필요, 키가 없거나 실패·6초 초과면 키워드 대답으로 대체). `voice_result.detail.responder` 에는 실제로 대답한 응답기(`llm`/`keyword`)가 기록되고 대체되면 `fallbackReason`·`latencyMs` 도 남는다.
+  - 개인정보: 크롬·엣지의 Web Speech 인식은 음성을 구글 서버로 보낸다(기기 내 처리 아님).
+  - 개인정보: `askLlm` 을 켜면 인식된 아이 발화 글이 대답 생성을 위해 Anthropic API로 전송된다(키는 실험자 기기에만 둔다). 이 두 가지는 실험 동의서에 적어야 한다.
+  - 운영: 준비 밖 질문(`ask_free`)은 횟수 제한이 없어 LLM 호출 비용이 늘 수 있다. 실험 전 사용 한도를 낮게 건 키를 쓴다.
 
 ## 그림 넣는 법
 
 그림은 선택이다. **그림 파일이 없으면 그림 영역이 사라지고 지금처럼 글만 보인다**(레이아웃 깨짐 없음). 실험자 화면 조건 패널의 "그림 보이기"를 끄면 그림·오버레이를 아예 그리지 않는다(분기 토글과 독립, `session_start` 의 `detail.pictures` 에 기록).
 
 - **장면 id = 본문 노드 id**(`p1`, `c1.c1a.consequence`, `c1.c1b.rewind.consequence`, `end.original`, `end.alt` …, rewind 시도 접미사 `#n` 은 뺀다).
-- **파일 위치**: `public/img/<storyId>/<장면 id의 '.'을 '_'로>.png`. 예: `public/img/heungbu/c1_c1b_rewind_consequence.png`, `public/img/heungbu/end_alt.png`.
+- **파일 위치**: `public/img/<storyId>/<장면 id의 '.'을 '_'로>.webp`. 예: `public/img/heungbu/c1_c1b_rewind_consequence.webp`, `public/img/heungbu/end_alt.webp`.
 - **재사용 규칙**: `bridge`·`contrast`·`contrastFinal`·`echo`(분기 off의 `offNarration` 포함) 화면은 같은 선택지의 `consequence` 그림을 쓰고, 그것도 없으면 직전 척추 passage 그림을 쓴다. 선택·이유·이해 질문 화면은 직전에 보여 준 그림을 그대로 둔다.
-- **오버레이**: 투명 PNG를 `public/img/common/<name>.png` 에 넣고 시나리오 JSON 최상위 `art.motions` 에 적는다. 그 장면의 그 페이지에 들어설 때 1회(1.2~2초) 움직이고 끝 상태로 멈춘다. 기기의 '동작 줄이기' 설정이면 움직임 없이 끝 상태만 보인다.
+- **오버레이**: 투명 배경 그림을 `public/img/common/<name>.webp` 에 넣고 시나리오 JSON 최상위 `art.motions` 에 적는다. 그 장면의 그 페이지에 들어설 때 1회(1.2~2초) 움직이고 끝 상태로 멈춘다. 기기의 '동작 줄이기' 설정이면 움직임 없이 끝 상태만 보인다.
 - `art` 섹션은 없어도 된다(위 파일명 규칙으로 추정). 파일명을 바꾸거나 그림을 일부러 빼려면 `art.scenes` 에 적는다(`null` = 그 장면은 그림 없음).
 
 ```json
 "art": {
-  "scenes": { "p1": { "image": "p1_house.png" }, "c1.c1b.converge.consequence": { "image": null } },
+  "scenes": { "p1": { "image": "p1_house.webp" }, "c1.c1b.converge.consequence": { "image": null } },
   "motions": [
-    { "scene": "p2", "page": 2, "overlay": "swallow.png", "motion": "fall", "x": 0.6, "y": 0.4, "size": 0.25 }
+    { "scene": "p2", "page": 2, "overlay": "swallow.webp", "motion": "fall", "x": 0.6, "y": 0.4, "size": 0.25 }
   ]
 }
 ```
@@ -73,6 +79,7 @@ npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ �
 ## 금지 사항
 
 - 장면 그림과 이야기와 일치하는 오버레이 애니메이션(위 6종)만 허용한다. 게임·핫스팟(누르면 반응하는 그림)·배경음·효과음·보상·장식 애니메이션은 넣지 않는다. 이모지는 쓰지 않는다.
+- 그림 위 핫스팟(누르면 반응하는 그림)은 금지. 선택 직전 묻기 화면의 인물 버튼은 그림 밖 버튼이라 허용.
 - API 키를 커밋하지 않는다(키는 실험자 기기 localStorage 에만, CSV·JSON 내보내기에서 제외).
 - `innerHTML` 을 쓰지 않는다. 모든 텍스트는 `textContent` 로 렌더링한다.
 - `docs/transcripts/` 는 생성물이므로 커밋하지 않는다.

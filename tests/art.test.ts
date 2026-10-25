@@ -3,6 +3,7 @@ import fixture from "./fixtures/mini.json";
 import heungbu from "../src/data/heungbu.json";
 import { resolveArt, sceneFile, sceneIdOf } from "../src/ui/art";
 import type { BodyScreen, BodyView, Conditions, Story, View } from "../src/story/types";
+import { storyAsk } from "./helpers-ask";
 
 const story = fixture as unknown as Story;
 const B = import.meta.env.BASE_URL;
@@ -168,5 +169,20 @@ describe("art.pages(페이지별 그림)", () => {
     bad.art.pages = { p1: ["p1.webp"] };
     const r = validateStory(bad);
     expect(r.ok).toBe(false);
+  });
+});
+
+describe("묻기 화면 그림", () => {
+  const askView: View = { screen: "ask", nodeId: "c1.ask", choicePointId: "c1", storyId: "mini", prompt: "?", characters: [], selectedCharacterId: null, questions: [], selectedQuestionId: null, asksLeft: 2, voice: "idle", voiceFails: 0 };
+  const last = { image: img("mini", "p1.webp"), fallback: null };
+  it("ask 화면은 직전 그림 유지", () => expect(resolveArt(storyAsk, askView, last)).toEqual(last));
+  it("clue 있는 대답은 clue 그림, fallback은 직전 그림", () => {
+    expect(resolveArt(storyAsk, body("askAnswer", "c1.ask.tori.q1", 1, "c1"), last)).toEqual({ image: img("mini", "tori_q1.webp"), fallback: img("mini", "p1.webp") });
+  });
+  it("clue 없는 대답은 직전 그림 유지", () => {
+    expect(resolveArt(storyAsk, body("askAnswer", "c1.ask.tori.q2", 1, "c1"), last)).toEqual(last);
+  });
+  it("직전 그림이 없고 clue도 없으면 그림 없음", () => {
+    expect(resolveArt(storyAsk, body("askAnswer", "c1.ask.tori.q2", 1, "c1"), null)).toEqual({ image: null });
   });
 });

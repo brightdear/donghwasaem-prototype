@@ -7,7 +7,7 @@ import type { EngineLogEvent } from "../src/log/types";
 import { STRINGS } from "../src/ui/strings";
 
 const story = fixture as unknown as Story;
-const AUTO: EngineSettings = { manualReading: false, confirmMode: "double" };
+const AUTO: EngineSettings = { manualReading: false, confirmMode: "double", askLayer: false, voiceAsk: false };
 
 const OFF: Conditions = { branching: false, mismatch: "na", askWhy: "na" };
 const C = (mismatch: "rewind" | "converge" | "altEnding", askWhy: boolean): Conditions => ({ branching: true, mismatch, askWhy });
@@ -177,18 +177,18 @@ const EXPECTED: Record<string, { decisions: string[]; nodes: string[] }> = {
   "converge-why/다른만": {
     decisions: ["c1b", "c2b", "c3b"],
     nodes: [
-      "p1", "c1", "c1.c1b.echo", "c1.c1b.why", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge",
-      "p2", "c2", "c2.c2b.echo", "c2.c2b.why", "c2.c2b.converge.consequence", "c2.c2b.converge.bridge",
-      "p3", "c3", "c3.c3b.echo", "c3.c3b.why", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge",
+      "p1", "c1", "c1.c1b.echo", "c1.c1b.why", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge", "c1.c1a.consequence",
+      "p2", "c2", "c2.c2b.echo", "c2.c2b.why", "c2.c2b.converge.consequence", "c2.c2b.converge.bridge", "c2.c2a.consequence",
+      "p3", "c3", "c3.c3b.echo", "c3.c3b.why", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge", "c3.c3a.consequence",
       "end.original",
     ],
   },
   "converge-why/섞기": {
     decisions: ["c1b", "c2a", "c3b"],
     nodes: [
-      "p1", "c1", "c1.c1b.echo", "c1.c1b.why", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge",
+      "p1", "c1", "c1.c1b.echo", "c1.c1b.why", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge", "c1.c1a.consequence",
       "p2", "c2", "c2.c2a.echo", "c2.c2a.why", "c2.c2a.consequence",
-      "p3", "c3", "c3.c3b.echo", "c3.c3b.why", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge",
+      "p3", "c3", "c3.c3b.echo", "c3.c3b.why", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge", "c3.c3a.consequence",
       "end.original",
     ],
   },
@@ -204,18 +204,18 @@ const EXPECTED: Record<string, { decisions: string[]; nodes: string[] }> = {
   "converge-nowhy/다른만": {
     decisions: ["c1b", "c2c", "c3b"],
     nodes: [
-      "p1", "c1", "c1.c1b.echo", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge",
-      "p2", "c2", "c2.c2c.echo", "c2.c2c.converge.consequence", "c2.c2c.converge.bridge",
-      "p3", "c3", "c3.c3b.echo", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge",
+      "p1", "c1", "c1.c1b.echo", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge", "c1.c1a.consequence",
+      "p2", "c2", "c2.c2c.echo", "c2.c2c.converge.consequence", "c2.c2c.converge.bridge", "c2.c2a.consequence",
+      "p3", "c3", "c3.c3b.echo", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge", "c3.c3a.consequence",
       "end.original",
     ],
   },
   "converge-nowhy/섞기": {
     decisions: ["c1b", "c2a", "c3b"],
     nodes: [
-      "p1", "c1", "c1.c1b.echo", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge",
+      "p1", "c1", "c1.c1b.echo", "c1.c1b.converge.consequence", "c1.c1b.converge.bridge", "c1.c1a.consequence",
       "p2", "c2", "c2.c2a.echo", "c2.c2a.consequence",
-      "p3", "c3", "c3.c3b.echo", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge",
+      "p3", "c3", "c3.c3b.echo", "c3.c3b.converge.consequence", "c3.c3b.converge.bridge", "c3.c3a.consequence",
       "end.original",
     ],
   },
@@ -319,13 +319,29 @@ describe("altEnding 결말 선택(OQ-2)", () => {
   });
 });
 
+it("converge: 다리글 뒤 원작 consequence를 읽고, forced_original은 없다", () => {
+  const r = run(C("converge", false), ["c1b", "c2a", "c3a"]);
+  const i = r.nodes.indexOf("c1.c1b.converge.bridge");
+  expect(r.nodes[i + 1]).toBe("c1.c1a.consequence");
+  expect(r.nodes[i + 2]).toBe("p2");
+  expect(r.logs.filter((e) => e.event_type === "forced_original")).toEqual([]);
+  const conseq = r.logs.find((e) => e.event_type === "screen_enter" && e.node_id === "c1.c1a.consequence")!;
+  expect(conseq).toMatchObject({ screen: "consequence", choice_point_id: "c1", attempt: 1 });
+});
+it("altEnding은 종전대로 bridge 뒤 바로 척추", () => {
+  const r = run(C("altEnding", false), ["c1b", "c2a", "c3a"]);
+  const i = r.nodes.indexOf("c1.c1b.altEnding.bridge");
+  expect(r.nodes[i + 1]).toBe("p2");
+});
+
 describe("converge·altEnding 낭독 내용", () => {
   const origC1 = story.choicePoints[0]!.options[0]!.consequence!.join(" ");
   for (const kind of ["converge", "altEnding"] as const) {
-    it(`${kind}: 다른 선택이면 원작 consequence 미낭독, bridge 낭독`, () => {
+    it(`${kind}: 다른 선택이면 원작 consequence ${kind === "converge" ? "낭독" : "미낭독"}, bridge 낭독`, () => {
       const r = run(C(kind, true), ["c1b", "c2a", "c3a"]);
       const texts = r.speaks.map((s) => s.text);
-      expect(texts.join(" ")).not.toContain(origC1);
+      if (kind === "converge") expect(texts.join(" ")).toContain(origC1);
+      else expect(texts.join(" ")).not.toContain(origC1);
       const m = story.choicePoints[0]!.options[1]!.mismatch![kind];
       // 문단 1개 = 페이지 1개 = 낭독 1개
       for (const p of [...m.bridge, ...m.consequence]) expect(texts).toContain(p);
@@ -436,7 +452,7 @@ describe("화면 진행 규칙", () => {
   });
 
   it("prev: 같은 노드 앞 페이지로 돌아가 다시 읽고 prev_click 기록, 노드 첫 페이지에서는 무시", () => {
-    const s: EngineSettings = { manualReading: true, confirmMode: "double" };
+    const s: EngineSettings = { manualReading: true, confirmMode: "double", askLayer: false, voiceAsk: false };
     const r0 = init(story, OFF, s, 0);
     const first = step(r0.state, { type: "prev", at: 1 });
     expect(first.state).toBe(r0.state);
@@ -449,7 +465,7 @@ describe("화면 진행 규칙", () => {
   });
 
   it("실험자 낭독 모드: speak 없이 진입 즉시 '다음' 표시·진행", () => {
-    const s: EngineSettings = { manualReading: true, confirmMode: "double" };
+    const s: EngineSettings = { manualReading: true, confirmMode: "double", askLayer: false, voiceAsk: false };
     const r0 = init(story, OFF, s, 0);
     expect(r0.effects.some((e) => e.type === "speak")).toBe(false);
     expect(currentView(r0.state)).toMatchObject({ nextVisible: true });
@@ -497,7 +513,7 @@ describe("화면 진행 규칙", () => {
   });
 
   it("confirmMode single: 첫 탭이 확정", () => {
-    let r = toChoice(C("converge", false), { manualReading: false, confirmMode: "single" });
+    let r = toChoice(C("converge", false), { manualReading: false, confirmMode: "single", askLayer: false, voiceAsk: false });
     r = step(r.state, { type: "listen", optionId: "c1a", at: 200 });
     expect(currentView(r.state)).toMatchObject({ screen: "echo", nodeId: "c1.c1a.echo" });
   });
@@ -762,7 +778,7 @@ describe("페이지 단위 본문(문단 1개 = 화면 1페이지)", () => {
   });
 
   it("실험자 낭독 모드: 페이지마다 speak 없이 즉시 '다음'", () => {
-    let r = init(story3, OFF, { manualReading: true, confirmMode: "double" }, 0);
+    let r = init(story3, OFF, { manualReading: true, confirmMode: "double", askLayer: false, voiceAsk: false }, 0);
     for (let i = 0; i < 3; i++) {
       expect(speaksOf(r.effects)).toEqual([]);
       expect(currentView(r.state)).toMatchObject({ screen: "passage", page: i + 1, pageCount: 3, nextVisible: true });

@@ -4,7 +4,7 @@
 
 import type { LogEvent, SessionRecord } from "../log/types";
 import type { QuestionType, Story } from "../story/types";
-import type { ComprehensionResult, ReportChoice, ReportInput } from "./types";
+import { FREE_QUESTION_LABEL, type ComprehensionResult, type ReportAsk, type ReportChoice, type ReportInput } from "./types";
 
 const TYPE_ORDER: QuestionType[] = ["explicit", "inference", "sequence"];
 
@@ -12,6 +12,47 @@ export function categorize(correct: number, total: number): ComprehensionResult 
   if (correct === total) return "all";
   if (correct === 0) return "none";
   return correct * 2 > total ? "most" : "some";
+}
+
+interface ResolvedAsk {
+  ask: ReportAsk;
+  said: string | undefined;
+}
+
+function resolveAsks(record: SessionRecord, story: Story): ResolvedAsk[] {
+  const out: ResolvedAsk[] = [];
+  for (const e of record.events) {
+    if (e.event_type !== "ask_confirm" && e.event_type !== "ask_free") continue;
+    const cp = story.choicePoints.find((c) => c.id === e.choice_point_id);
+    const block = cp?.ask;
+    if (!cp || !block || !e.question_id) continue;
+    const rest = e.question_id.startsWith(`${cp.id}.ask.`) ? e.question_id.slice(cp.id.length + 5) : undefined;
+    if (rest === undefined) continue;
+    const scene = block.sceneLabel ?? cp.prompt;
+    if (e.event_type === "ask_free") {
+      // 준비 밖 음성 질문: LLM 입력(asks)에는 고정 문구만, 인식 글은 부모 화면용 said로만 쓴다. LLM 대답은 넣지 않는다
+      const ch = rest.endsWith(".free") ? block.characters.find((c) => `${c.id}.free` === rest) : undefined;
+      const t = e.detail?.transcript;
+      if (!ch || typeof t !== "string" || t.trim() === "") continue;
+      out.push({ ask: { scene, character: ch.name, question: FREE_QUESTION_LABEL, via: "voice", free: true }, said: t });
+      continue;
+    }
+    for (const ch of block.characters) {
+      const q = ch.questions.find((x) => `${ch.id}.${x.id}` === rest);
+      if (!q) continue;
+      const via = e.detail?.via === "voice" ? "voice" : "card";
+      const t = e.detail?.transcript;
+      const said = via === "voice" && typeof t === "string" && t.trim() !== "" ? t : undefined;
+      out.push({ ask: { scene, character: ch.name, question: q.text, via }, said });
+      break;
+    }
+  }
+  return out;
+}
+
+/** summarize().asks와 같은 순서·길이. 음성 인식 글은 부모 화면 전용이며 LLM에 보내지 않는다. */
+export function saidByAsk(record: SessionRecord, story: Story): (string | undefined)[] {
+  return resolveAsks(record, story).map((r) => r.said);
 }
 
 export function summarize(record: SessionRecord, story: Story): ReportInput {
@@ -65,5 +106,6 @@ export function summarize(record: SessionRecord, story: Story): ReportInput {
     choices,
     comprehension,
     parentPrompts: [...story.parentPrompts],
+    asks: resolveAsks(record, story).map((r) => r.ask),
   };
 }

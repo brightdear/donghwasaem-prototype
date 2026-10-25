@@ -39,6 +39,15 @@ body {
 .page-text { margin: 0; }
 .handoff-text { font-size: 2rem; line-height: 1.6; text-align: center; margin: 48px 0; }
 .child .prompt { font-weight: bold; }
+/* 묻기 화면: 인물 버튼(그림 밖 버튼) → 질문 카드. 이미 물은 카드는 흐리게 */
+.ask-characters { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+.btn-character { display: flex; align-items: center; gap: 10px; min-height: 64px; }
+.btn-character img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; }
+.btn-character.selected { border: 6px solid #1d4ed8; }
+.btn-option.asked { opacity: 0.45; }
+.btn-mic.listening { animation: mic-pulse 1.2s ease-in-out infinite; }
+.btn-mic.listening:disabled { opacity: 1; } /* 듣는 중 표시는 흐리게 하지 않는다 */
+@keyframes mic-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 
 /*
  * 그림책 지면: 그림이 화면(3:2 펼침면)을 꽉 채우고, 글은 그림 위 빈 곳(위 왼쪽 하늘)에 종이 글상자로 얹는다.
@@ -84,7 +93,7 @@ body:has(.child.has-scene) { background: #e9dfc9; padding: 0; overflow: hidden; 
 .child.has-scene[data-text="right"]::before {
   background: radial-gradient(ellipse 75% 55% at 100% 0%, rgba(255, 251, 240, 0.72) 0%, rgba(255, 251, 240, 0.45) 45%, rgba(255, 251, 240, 0) 100%);
 }
-.child.has-scene .page-text, .child.has-scene .options, .child.has-scene .actions { z-index: 2; }
+.child.has-scene .page-text, .child.has-scene .options, .child.has-scene .actions, .child.has-scene .ask-panel { z-index: 2; }
 .child.has-scene .child-text {
   font-family: "Gowun Dodum", "Malgun Gothic", sans-serif;
   font-size: clamp(1.05rem, 2.7vw, 2.2rem);
@@ -119,7 +128,16 @@ body:has(.child.has-scene) { background: #e9dfc9; padding: 0; overflow: hidden; 
   text-align: center;
 }
 .child.has-scene .btn-option.selected { border: 6px solid #c2620c; }
+/* 묻기 패널은 보기 목록 자리에 얹는다(인물 줄 위, 질문 카드 아래) */
+.child.has-scene .ask-panel { position: absolute; left: 3.5%; right: 3.5%; bottom: 16%; }
+.child.has-scene .ask-panel .options { position: static; margin-top: 12px; }
+.child.has-scene .ask-characters { margin: 0; }
+.child.has-scene .btn.btn-character { background: rgba(255, 250, 238, 0.94); border: 3px solid #d8c7a2; min-height: 64px; }
+.child.has-scene .btn-character.selected { border: 6px solid #c2620c; }
+.child.has-scene .btn-mic { background: rgba(255, 250, 238, 0.9); border-color: #d8c7a2; }
 .child.has-scene .actions { position: absolute; right: 3%; bottom: 3%; margin: 0; flex-direction: row-reverse; }
+/* 묻기 화면: 책장 귀퉁이(우하단)가 "이걸로 할래" 버튼을 가리지 않게 살짝 띄운다 */
+.child.has-scene:has(.ask-panel) .actions { right: calc(3% + 36px); bottom: calc(3% + 12px); }
 .child.has-scene .btn { min-height: 56px; font-size: clamp(0.95rem, 1.9vw, 1.4rem); border-radius: 28px; color: #3b2a17; }
 .child.has-scene .btn-primary { background: #f6c76b; border-color: #c2862a; padding: 10px 28px; }
 .child.has-scene .btn-secondary { background: rgba(255, 250, 238, 0.9); border-color: #d8c7a2; }
@@ -131,6 +149,7 @@ body:has(.child.has-scene) { background: #e9dfc9; padding: 0; overflow: hidden; 
   .child.has-scene .page-text, .child.has-scene[data-text="right"] .page-text { left: 6%; right: 6%; max-width: none; }
   .child.has-scene .child-text { font-size: clamp(1.15rem, 5.2vw, 2rem); }
   .child.has-scene .options { flex-direction: column; gap: 12px; bottom: 13%; }
+  .child.has-scene .ask-panel { bottom: 13%; }
   .child.has-scene .btn-option { font-size: clamp(1rem, 4.4vw, 1.6rem); }
   .child.has-scene .btn { font-size: clamp(1rem, 4vw, 1.4rem); }
 }
@@ -165,6 +184,7 @@ body:has(.child.has-scene) { background: #e9dfc9; padding: 0; overflow: hidden; 
 @media (prefers-reduced-motion: reduce) {
   /* 움직임 없이 끝 상태만 보여 준다 */
   .overlay, .scene.leaving { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+  .btn-mic.listening { animation: none; }
 }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
 

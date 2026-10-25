@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import fixture from "./fixtures/mini.json";
 import heungbu from "../src/data/heungbu.json";
 import ant from "../src/data/ant.json";
-import { CHARS_PER_MINUTE, countChars, enumeratePaths, renderTranscript } from "../src/story/transcript";
+import { CHARS_PER_MINUTE, askChars, countChars, enumeratePaths, renderTranscript } from "../src/story/transcript";
+import { ASK_ON, storyAsk } from "./helpers-ask";
 import { VALID_CONDITIONS, conditionsSlug, type Conditions, type Story } from "../src/story/types";
 import { STRINGS } from "../src/ui/strings";
 
@@ -19,9 +20,9 @@ const count = (hay: string, needle: string) => hay.split(needle).length - 1;
 
 for (const story of stories) {
   describe(`대본 — ${story.id}`, () => {
-    it("fixture 경로 수: off 1, converge·altEnding 12, rewind 63", () => {
+    it("fixture 경로 수: off 1, converge 12, rewind 63", () => {
       const n = (c: Conditions) => enumeratePaths(story, c).length;
-      expect(VALID_CONDITIONS.map(n)).toEqual([1, 63, 63, 12, 12, 12, 12]);
+      expect(VALID_CONDITIONS.map(n)).toEqual([1, 63, 63, 12, 12]);
     });
 
     for (const c of VALID_CONDITIONS) {
@@ -41,6 +42,17 @@ for (const story of stories) {
             for (const f of facts) expect(text, `${p.label} / ${f}`).toContain(f);
           }
         });
+
+        if (c.mismatch === "converge") {
+          it("다른 선택 경로의 대본에 원작 consequence 첫 문단이 들어 있다", () => {
+            const cp = story.choicePoints[0]!;
+            const orig = cp.options.find((o) => o.matchesOriginal)!;
+            const other = cp.options.find((o) => !o.matchesOriginal)!;
+            const rest = story.choicePoints.slice(1).map((x) => [x.options.find((o) => o.matchesOriginal)!.id]);
+            const tr = renderTranscript(story, c, [[other.id], ...rest]);
+            expect(tr.storyLines.map((l) => l.text).join("\n")).toContain(orig.consequence![0]!);
+          });
+        }
 
         if (c.mismatch === "rewind") {
           it('"다시 골라" 횟수 = 1회째 다른 선택이 있었던 선택 지점 수(1회째 contrast 뒤에만)', () => {
@@ -104,3 +116,35 @@ for (const story of stories) {
     });
   });
 }
+
+describe("흥부와 놀부 원작 복원", () => {
+  const h = heungbu as unknown as Story;
+  it("척추에 p2n이 c2와 p3 사이에 있다", () => {
+    expect(h.spine.map((n) => n.id)).toEqual(["p1", "c1", "p2", "c2", "p2n", "p3", "c3", "p4", "end"]);
+  });
+  it("원작 경로 ≤ 2,000자, 되돌리기 최장 ≤ 2,500자", () => {
+    const conv: Conditions = { branching: true, mismatch: "converge", askWhy: false };
+    const orig = h.choicePoints.map((cp) => [cp.options.find((o) => o.matchesOriginal)!.id]);
+    expect(renderTranscript(h, conv, orig).storyChars).toBeLessThanOrEqual(2000);
+    const rw: Conditions = { branching: true, mismatch: "rewind", askWhy: false };
+    const longest = Math.max(...enumeratePaths(h, rw).map((p) => renderTranscript(h, rw, p.choicesPerPoint).storyChars));
+    expect(longest).toBeLessThanOrEqual(2500);
+  });
+  it("이해 질문 중 하나는 p2n을 가리킨다", () => {
+    expect(h.comprehension.some((q) => q.refersTo.includes("p2n"))).toBe(true);
+  });
+});
+
+describe("askChars·묻기 제외 대본", () => {
+  it("storyAsk c1: intro 10 + 대답 14 + 6 = 30", () => {
+    // intro "다람쥐한테 물어볼까?" → 10자, bird.q1 → 14자, bird.q2 → 6자
+    expect(askChars(storyAsk)).toEqual({ perPoint: [{ cpId: "c1", chars: 30 }], total: 30 });
+  });
+  it("실제 흥부 묻기 글자 수 > 0", () => expect(askChars(heungbu as unknown as Story).total).toBeGreaterThan(0));
+  it("ask 없는 이야기는 빈 표", () => expect(askChars(fixture as unknown as Story)).toEqual({ perPoint: [], total: 0 }));
+  it("askLayer 켠 설정으로도 대본은 묻기를 건너뛴다", () => {
+    const c: Conditions = { branching: true, mismatch: "converge", askWhy: false };
+    const tr = renderTranscript(storyAsk, c, [["c1a"], ["c2a"], ["c3a"]], ASK_ON);
+    expect(tr.nodeIds.filter((n) => n.includes(".ask"))).toEqual([]);
+  });
+});

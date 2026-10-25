@@ -1,5 +1,5 @@
 /**
- * 시나리오 검증기 — 계획 3.2 "검증기 규칙" R1~R7, R9(art 섹션).
+ * 시나리오 검증기 — 계획 3.2 "검증기 규칙" R1~R7, R9(art 섹션), R10(ask).
  * 금지어·이모지 검사는 report/filter.ts와 독립적으로 여기서 자체 구현한다.
  */
 import { MOTIONS, type Motion, type Story } from "./types";
@@ -76,6 +76,7 @@ export function validateStory(story: unknown): ValidateResult {
     if (opts.length < 2 || opts.length > 3) err("R2_OPTION_COUNT", "선택지는 2~3개", `${p}.options`);
     const originals = opts.filter((o) => isObj(o) && o.matchesOriginal === true).length;
     if (originals !== 1) err("R2_ORIGINAL_COUNT", `matchesOriginal=true는 정확히 1개(현재 ${originals})`, `${p}.options`);
+    if (cp.ask !== undefined) validateAsk(cp.ask, `${p}.ask`, err);
     opts.forEach((o, oi) => {
       const op = `${p}.options[${oi}]`;
       if (!isObj(o) || !isStr(o.id) || !isStr(o.label) || typeof o.matchesOriginal !== "boolean") {
@@ -242,6 +243,45 @@ export function validateStory(story: unknown): ValidateResult {
   return errors.length === 0 ? { ok: true, story: story as unknown as Story } : { ok: false, errors };
 }
 
+/** R10 — ChoicePoint.ask(묻기 층) 검증 */
+function validateAsk(ask: unknown, path: string, err: (code: string, message: string, path?: string) => void): void {
+  if (!isObj(ask)) return err("S_TYPE", "ask는 객체여야 함", path);
+  if (typeof ask.voice !== "boolean") err("S_TYPE", "ask.voice는 boolean", `${path}.voice`);
+  if (ask.maxAsks !== undefined && !(Number.isInteger(ask.maxAsks) && (ask.maxAsks as number) >= 1 && (ask.maxAsks as number) <= 3))
+    err("R10_ASK_MAXASKS", "maxAsks는 1~3 정수", `${path}.maxAsks`);
+  for (const f of ["intro", "sceneLabel"] as const)
+    if (ask[f] !== undefined && !isStr(ask[f])) err("S_TYPE", `ask.${f}는 문자열`, `${path}.${f}`);
+  const chars = Array.isArray(ask.characters) ? ask.characters : [];
+  if (!Array.isArray(ask.characters)) err("S_TYPE", "ask.characters는 배열", `${path}.characters`);
+  else if (chars.length < 1 || chars.length > 2) err("R10_ASK_CHARACTERS", "묻기 인물은 1~2명", `${path}.characters`);
+  chars.forEach((ch, ci) => {
+    const cp = `${path}.characters[${ci}]`;
+    if (!isObj(ch)) return err("S_TYPE", "ask 인물 형식 오류", cp);
+    if (!isStr(ch.id)) err("S_TYPE", "인물 id 필요", `${cp}.id`);
+    if (!isStr(ch.name)) err("S_TYPE", "인물 name 필요", `${cp}.name`);
+    if (ch.portrait !== undefined && !isStr(ch.portrait)) err("S_TYPE", "portrait는 문자열", `${cp}.portrait`);
+    if (ask.voice === true)
+      for (const f of ["unmatched", "unmatchedFinal"] as const)
+        if (!isStr(ch[f])) err("R10_ASK_UNMATCHED", `voice=true면 ${f} 필요`, `${cp}.${f}`);
+    if (!Array.isArray(ch.questions)) return err("S_TYPE", "questions는 배열", `${cp}.questions`);
+    if (ch.questions.length < 2 || ch.questions.length > 3) err("R10_ASK_QUESTIONS", "인물당 질문은 2~3개", `${cp}.questions`);
+    const seen = new Set<string>();
+    ch.questions.forEach((q, qi) => {
+      const qp = `${cp}.questions[${qi}]`;
+      if (!isObj(q)) return err("S_TYPE", "질문 형식 오류", qp);
+      if (!isStr(q.id)) err("S_TYPE", "질문 id 필요", `${qp}.id`);
+      else if (q.id === "free") err("R10_ASK_QID_RESERVED", "질문 id 'free'는 준비 밖 질문용으로 예약됨", `${qp}.id`);
+      else if (seen.has(q.id)) err("R10_ASK_QID_DUP", `질문 id 중복: ${q.id}`, `${qp}.id`);
+      else seen.add(q.id);
+      if (!isStr(q.text)) err("S_TYPE", "질문 text 필요", `${qp}.text`);
+      if (q.clue !== undefined && !isStr(q.clue)) err("S_TYPE", "clue는 문자열", `${qp}.clue`);
+      if (!Array.isArray(q.keywords) || q.keywords.length < 1 || !q.keywords.every((k) => typeof k === "string" && k.replace(/\s/g, "").length >= 2))
+        err("R10_ASK_KEYWORDS", "keywords는 1개 이상, 각 공백 제외 2자 이상", `${qp}.keywords`);
+      if (!isStrArr(q.answer) || q.answer.length > 2) err("R10_ASK_ANSWER", "answer는 비어 있지 않은 문자열 1~2개", `${qp}.answer`);
+    });
+  });
+}
+
 /** 본문 노드 id(하위 노드 id 규칙, #n 접미사 제외) → 페이지 수 */
 function bodyNodePages(passages: Map<string, string[]>, cps: unknown[], endings: unknown): Map<string, number> {
   const out = new Map<string, number>();
@@ -255,6 +295,11 @@ function bodyNodePages(passages: Map<string, string[]>, cps: unknown[], endings:
   }
   for (const cp of cps) {
     if (!isObj(cp) || !isStr(cp.id) || !Array.isArray(cp.options)) continue;
+    if (isObj(cp.ask) && Array.isArray(cp.ask.characters))
+      for (const ch of cp.ask.characters) {
+        if (!isObj(ch) || !isStr(ch.id) || !Array.isArray(ch.questions)) continue;
+        for (const q of ch.questions) if (isObj(q) && isStr(q.id)) out.set(`${cp.id}.ask.${ch.id}.${q.id}`, len(q.answer));
+      }
     for (const o of cp.options) {
       if (!isObj(o) || !isStr(o.id)) continue;
       const base = `${cp.id}.${o.id}`;

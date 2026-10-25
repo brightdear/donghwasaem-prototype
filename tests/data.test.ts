@@ -28,7 +28,7 @@ function splitSentences(t: string): string[] {
 function pageArrays(story: Story): { path: string; pages: string[] }[] {
   const out: { path: string; pages: string[] }[] = [];
   for (const n of story.spine) if (n.type === "passage") out.push({ path: n.id, pages: n.paragraphs });
-  for (const cp of story.choicePoints)
+  for (const cp of story.choicePoints) {
     for (const o of cp.options) {
       if (o.consequence) out.push({ path: `${o.id}.consequence`, pages: o.consequence });
       if (o.mismatch) {
@@ -39,6 +39,8 @@ function pageArrays(story: Story): { path: string; pages: string[] }[] {
         }
       }
     }
+    if (cp.ask) for (const ch of cp.ask.characters) for (const q of ch.questions) out.push({ path: `${cp.id}.ask.${ch.id}.${q.id}`, pages: q.answer });
+  }
   out.push({ path: "endings.original", pages: story.endings.original.paragraphs });
   out.push({ path: "endings.alt", pages: story.endings.alt.paragraphs });
   return out;
