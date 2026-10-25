@@ -127,3 +127,81 @@ describe("카드로 묻기", () => {
     expect((view(toC1(noIntro)) as any).prompt).toBe(STRINGS.askIntroDefault);
   });
 });
+
+describe("말로 묻기", () => {
+  const M = { characterId: "tori", questionId: "q1", answerText: ["세 개야."] };
+  it("voiceStart → listening·voice_start·cancelSpeech; 연타는 무시", () => {
+    const sim = toC1();
+    const fx = act(sim, { type: "voiceStart" });                      // intro 낭독 중
+    expect(fx.some((e) => e.type === "cancelSpeech")).toBe(true);
+    expect(view(sim)).toMatchObject({ voice: "listening" });
+    expect(sim.logs.at(-1)).toMatchObject({ event_type: "voice_start", node_id: "c1.ask" });
+    expect(act(sim, { type: "voiceStart" })).toEqual([]);
+  });
+  it("맞으면 ask_confirm(via voice, transcript)·voice_result(matched)·대답 화면", () => {
+    const sim = toC1();
+    act(sim, { type: "voiceStart" });
+    act(sim, { type: "voiceResult", transcript: "토리야 몇 개야", alternatives: ["몇 개"], matched: M });
+    expect(sim.logs.find((e) => e.event_type === "voice_result")).toMatchObject({ detail: { transcript: "토리야 몇 개야", alternatives: ["몇 개"], matched: "c1.ask.tori.q1" } });
+    expect(sim.logs.find((e) => e.event_type === "ask_confirm")).toMatchObject({ question_id: "c1.ask.tori.q1", option_id: "tori.q1", detail: { via: "voice", transcript: "토리야 몇 개야" } });
+    expect(view(sim)).toMatchObject({ screen: "askAnswer", nodeId: "c1.ask.tori.q1" });
+  });
+  it("못 맞추면 unmatched 낭독·voiceFails 1·idle; 두 번째는 unmatchedFinal·hidden; 세 번째 voiceStart 무시", () => {
+    const sim = toC1();
+    act(sim, { type: "voiceStart" });
+    act(sim, { type: "voiceResult", transcript: "", alternatives: [], matched: null });
+    expect(sim.speaks.at(-1)!.text).toBe("응? 다시 말해 줄래?");
+    expect(view(sim)).toMatchObject({ voice: "idle", voiceFails: 1, asksLeft: 2 });
+    act(sim, { type: "voiceStart" });
+    act(sim, { type: "voiceResult", transcript: "아무말", alternatives: [], matched: null });
+    expect(sim.speaks.at(-1)!.text).toBe("여기서 골라 줄래?");
+    expect(view(sim)).toMatchObject({ voice: "hidden", voiceFails: 2 });
+    expect(act(sim, { type: "voiceStart" })).toEqual([]);
+  });
+  it("고른 인물의 unmatched를 쓴다", () => {
+    const sim = toC1();
+    endSpeech(sim);
+    act(sim, { type: "askCharacter", characterId: "bird" });
+    act(sim, { type: "voiceStart" });
+    act(sim, { type: "voiceFail", reason: "not_allowed" });
+    expect(sim.logs.find((e) => e.event_type === "voice_fail")).toMatchObject({ detail: { reason: "not_allowed" } });
+    expect(sim.speaks.at(-1)!.text).toBe("짹? 다시 말해 줄래?");
+    expect((view(sim) as any).voiceFails).toBe(1);
+  });
+  it("이미 한 질문을 다시 말하면 ask_repeat, 대답 재생, asksLeft 불변, voiceFails 불변", () => {
+    const sim = toC1();
+    endSpeech(sim);
+    act(sim, { type: "askCharacter", characterId: "tori" });
+    act(sim, { type: "confirm", optionId: "tori.q1" });
+    endSpeech(sim); act(sim, { type: "next" });
+    act(sim, { type: "voiceStart" });
+    act(sim, { type: "voiceResult", transcript: "몇 개야", alternatives: [], matched: M });
+    expect(sim.logs.filter((e) => e.event_type === "ask_confirm")).toHaveLength(1);
+    expect(sim.logs.find((e) => e.event_type === "ask_repeat")).toMatchObject({ question_id: "c1.ask.tori.q1", detail: { via: "voice", transcript: "몇 개야" } });
+    expect(view(sim)).toMatchObject({ screen: "askAnswer", nodeId: "c1.ask.tori.q1" });
+    endSpeech(sim); act(sim, { type: "next" });
+    expect(view(sim)).toMatchObject({ screen: "ask", asksLeft: 1, voiceFails: 0 });
+  });
+  it("maxAsks 1: 대답 화면에서 온 voiceResult는 무시되고, 대답 뒤에는 선택 화면", () => {
+    const sim = toC1(withMaxAsks(1));
+    endSpeech(sim);
+    act(sim, { type: "askCharacter", characterId: "tori" });
+    act(sim, { type: "confirm", optionId: "tori.q1" });
+    expect(act(sim, { type: "voiceResult", transcript: "x", alternatives: [], matched: M })).toEqual([]);
+    endSpeech(sim); act(sim, { type: "next" });
+    expect(view(sim).screen).toBe("choice");
+  });
+  it("듣는 중 건너뛰어 화면이 바뀐 뒤 온 결과는 무시", () => {
+    const sim = toC1();
+    act(sim, { type: "voiceStart" });
+    act(sim, { type: "askSkip" });
+    expect(view(sim).screen).toBe("choice");
+    expect(act(sim, { type: "voiceResult", transcript: "몇 개야", alternatives: [], matched: M })).toEqual([]);
+    expect(act(sim, { type: "voiceFail", reason: "aborted" })).toEqual([]);
+  });
+  it("듣지 않는 중의 voiceResult·voiceFail은 무시", () => {
+    const sim = toC1();
+    expect(act(sim, { type: "voiceResult", transcript: "x", alternatives: [], matched: null })).toEqual([]);
+    expect(act(sim, { type: "voiceFail", reason: "timeout" })).toEqual([]);
+  });
+});

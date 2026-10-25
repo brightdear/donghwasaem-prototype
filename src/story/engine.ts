@@ -156,6 +156,11 @@ function askQuestion(ask: AskBlock, key: string): { characterId: string; q: AskQ
   const q = ask.characters.find((c) => c.id === characterId)?.questions.find((x) => x.id === qid);
   return q ? { characterId, q } : null;
 }
+/** 마이크 상태: 설정·콘텐츠가 꺼져 있거나 두 번 실패하면 숨김 */
+function currentViewVoice(s: EngineState, cur: AskCur): "hidden" | "idle" | "listening" {
+  if (!s.settings.voiceAsk || !askOf(s, cur.cpId).voice || (s.voiceFails[cur.cpId] ?? 0) >= 2) return "hidden";
+  return cur.listening ? "listening" : "idle";
+}
 function asksLeft(s: EngineState, cpId: string): number {
   return (askOf(s, cpId).maxAsks ?? 2) - (s.asked[cpId]?.length ?? 0);
 }
@@ -483,6 +488,18 @@ function confirmAsk(ctx: Ctx, cur: AskCur, optionId: string, at: number, via: "c
   advance(ctx, at);
 }
 
+/** 음성 미인식: 실패 횟수를 올리고 인물의 되묻기(2회째부터 마무리 문구)를 낭독 */
+function voiceMiss(ctx: Ctx, cur: AskCur, at: number): void {
+  const { s } = ctx;
+  const fails = (s.voiceFails[cur.cpId] ?? 0) + 1;
+  s.voiceFails = { ...s.voiceFails, [cur.cpId]: fails };
+  const ask = askOf(s, cur.cpId);
+  const ch = ask.characters.find((c) => c.id === cur.selectedCharacterId) ?? ask.characters[0];
+  const text = fails >= 2 ? (ch?.unmatchedFinal ?? STRINGS.voiceUnmatchedFinal) : (ch?.unmatched ?? STRINGS.voiceUnmatched);
+  speak(ctx, "prompt", "feedback", text, at);
+  render(ctx);
+}
+
 function answerWhy(ctx: Ctx, cur: WhyCur, optionId: string, at: number): void {
   const { s } = ctx;
   const o = cpById(s.story, cur.cpId).options.find((x) => x.id === cur.optionId);
@@ -706,11 +723,49 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
       enterChoiceNode(ctx, cpById(s.story, cur.cpId), at);
       break;
     }
-    case "voiceStart":
-    case "voiceResult":
-    case "voiceFail":
-      // 음성 경로는 Task 6
-      return unchanged;
+    case "voiceStart": {
+      if (cur.t !== "ask" || currentViewVoice(s, cur) !== "idle") return unchanged;
+      cur.listening = true;
+      cancelLive(ctx);
+      log(ctx, { event_type: "voice_start", at, ...ctxCols(cur, s) });
+      render(ctx);
+      break;
+    }
+    case "voiceResult": {
+      if (cur.t !== "ask" || !cur.listening) return unchanged;
+      cur.listening = false;
+      const m = action.matched;
+      const key = m ? `${m.characterId}.${m.questionId}` : null;
+      const found = key !== null && askQuestion(askOf(s, cur.cpId), key) ? key : null;
+      log(ctx, {
+        event_type: "voice_result",
+        at,
+        ...ctxCols(cur, s),
+        detail: { transcript: action.transcript, alternatives: action.alternatives, matched: found ? `${cur.cpId}.ask.${found}` : null },
+      });
+      if (found === null) {
+        voiceMiss(ctx, cur, at);
+      } else if (!(s.asked[cur.cpId] ?? []).includes(found)) {
+        confirmAsk(ctx, cur, found, at, "voice", action.transcript);
+      } else {
+        // 이미 한 질문: 대답만 다시 들려주고 횟수는 건드리지 않는다
+        const nodeId = `${cur.cpId}.ask.${found}`;
+        log(ctx, { event_type: "ask_repeat", at, ...ctxCols(cur, s), question_id: nodeId, option_id: found, detail: { via: "voice", transcript: action.transcript } });
+        s.queue = [
+          { t: "body", screen: "askAnswer", nodeId, cpId: cur.cpId, paragraphs: askQuestion(askOf(s, cur.cpId), found)!.q.answer, attempt: null },
+          { t: "ask", cpId: cur.cpId },
+        ];
+        advance(ctx, at);
+      }
+      break;
+    }
+    case "voiceFail": {
+      if (cur.t !== "ask" || !cur.listening) return unchanged;
+      cur.listening = false;
+      log(ctx, { event_type: "voice_fail", at, ...ctxCols(cur, s), detail: { reason: action.reason } });
+      voiceMiss(ctx, cur, at);
+      break;
+    }
     case "answerWhy": {
       if (cur.t !== "why") return unchanged;
       answerWhy(ctx, cur, action.optionId, at);
@@ -795,7 +850,7 @@ export function currentView(state: EngineState): View {
         }),
         selectedQuestionId: cur.selected,
         asksLeft: asksLeft(state, cur.cpId),
-        voice: !state.settings.voiceAsk || !ask.voice ? "hidden" : "idle",
+        voice: currentViewVoice(state, cur),
         voiceFails: state.voiceFails[cur.cpId] ?? 0,
       };
     }
