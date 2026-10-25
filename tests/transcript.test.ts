@@ -115,3 +115,21 @@ for (const story of stories) {
     });
   });
 }
+
+describe("흥부와 놀부 원작 복원", () => {
+  const h = heungbu as unknown as Story;
+  it("척추에 p2n이 c2와 p3 사이에 있다", () => {
+    expect(h.spine.map((n) => n.id)).toEqual(["p1", "c1", "p2", "c2", "p2n", "p3", "c3", "p4", "end"]);
+  });
+  it("원작 경로 ≤ 2,000자, 되돌리기 최장 ≤ 2,500자", () => {
+    const conv: Conditions = { branching: true, mismatch: "converge", askWhy: false };
+    const orig = h.choicePoints.map((cp) => [cp.options.find((o) => o.matchesOriginal)!.id]);
+    expect(renderTranscript(h, conv, orig).storyChars).toBeLessThanOrEqual(2000);
+    const rw: Conditions = { branching: true, mismatch: "rewind", askWhy: false };
+    const longest = Math.max(...enumeratePaths(h, rw).map((p) => renderTranscript(h, rw, p.choicesPerPoint).storyChars));
+    expect(longest).toBeLessThanOrEqual(2500);
+  });
+  it("이해 질문 중 하나는 p2n을 가리킨다", () => {
+    expect(h.comprehension.some((q) => q.refersTo.includes("p2n"))).toBe(true);
+  });
+});
