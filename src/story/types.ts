@@ -66,10 +66,36 @@ export interface ChoiceOption {
   mismatch?: Mismatch;
 }
 
+// ---------- 묻기 층 (설계 6.4, 선택 직전 선택) ----------
+
+export interface AskQuestion {
+  id: string;
+  text: string;
+  keywords: string[];
+  answer: string[];
+  clue?: string;
+}
+export interface AskCharacter {
+  id: string;
+  name: string;
+  portrait?: string;
+  questions: AskQuestion[];
+  unmatched?: string;
+  unmatchedFinal?: string;
+}
+export interface AskBlock {
+  voice: boolean;
+  maxAsks?: number;
+  intro?: string;
+  sceneLabel?: string;
+  characters: AskCharacter[];
+}
+
 export interface ChoicePoint {
   id: string; // c1, c2, c3
   prompt: string; // "흥부는 어떻게 할까?"
   options: ChoiceOption[]; // 2~3개, matchesOriginal=true 정확히 1개
+  ask?: AskBlock; // 설계 6.4, 선택 직전 묻기 층
 }
 
 export type QuestionType = "explicit" | "inference" | "sequence";
