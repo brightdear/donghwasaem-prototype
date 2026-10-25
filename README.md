@@ -36,9 +36,12 @@ npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ �
   - R5 `refersTo` 는 척추 `passage` id만, `answerFact`(배열이면 각 원소)는 참조한 passage 안에 문자열로 존재
   - R6 `endings.original`·`endings.alt` 둘 다 존재, `parentPrompts` 2개 이상
   - R7 모든 텍스트에 이모지·금지어 없음
+  - R10 (`ask`가 있을 때) `characters` 1~2, `questions` 2~3, `keywords` 1개 이상(각 2자 이상), `answer` 1~2문단, `voice` 면 `unmatched`·`unmatchedFinal` 필수, `maxAsks` 1~3, 질문 id `free` 는 예약어(음성 자유 질문 기록용)
   - R9 (`art` 섹션이 있을 때만) `motion` 값은 `fall`·`grow`·`fly_away`·`walk_in`·`walk_in_right`·`shiver`·`drift_down` 중 하나, `scene`·`scenes` 키는 실제 본문 노드 id, `page` 는 1~그 노드 문단 수, `x`·`y`·`size` 는 0~1
 - 페이지 규칙: `paragraphs`·`consequence`·`bridge` 배열의 원소 1개 = 아이 화면 1페이지 = 1~2문장(70자 이하, 작은따옴표 인용은 한 문장으로 셈). 페이지마다 낭독 후 '다음'. `tests/data.test.ts` 가 검사한다. R5는 passage 문단을 공백 하나로 이어 붙인 문자열에서 검사하므로 정답 사실이 페이지 경계를 넘어도 된다.
-- R8(의미 규칙): 척추 passage 는 직전 선택의 결과를 전제하지 않는다. 결과 의존 내용은 `consequence`/`bridge` 안에만 둔다. 정답 사실은 척추 passage 안에만 둔다.
+- R8(의미 규칙): 척추 passage 는 원작 선택지 `consequence` 까지의 사건을 전제할 수 있다. 다른 선택의 `consequence`·`bridge` 내용은 전제하지 않는다. 모든 경로가 원작 `consequence` 를 읽는다(다른 선택은 `bridge` 뒤에 원작 결과로 이어진다). 정답 사실은 척추 passage 안에만 둔다.
+- 조건은 5개 조합(분기 off / rewind·이유 있음·없음 / converge·이유 있음·없음)이다. `altEnding` 은 화면에서 고르지 않는다.
+- 묻기 층 설정(실험자 화면 설정, 세션 로그에 기록): `askLayer` 선택 전 카드로 묻기 켜기/끄기, `voiceAsk` 마이크로 말해서 묻기(브라우저 받아쓰기 지원 시), `askLlm` 준비 밖 질문을 LLM이 1~2문장으로 대답(API 키 필요, 키가 없거나 실패·6초 초과면 키워드 대답으로 대체). `voice_result.detail.responder` 에는 실제로 대답한 응답기(`llm`/`keyword`)가 기록되고 대체되면 `fallbackReason`·`latencyMs` 도 남는다.
 
 ## 그림 넣는 법
 

@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import fixture from "./fixtures/mini.json";
 import heungbu from "../src/data/heungbu.json";
 import ant from "../src/data/ant.json";
-import { CHARS_PER_MINUTE, countChars, enumeratePaths, renderTranscript } from "../src/story/transcript";
+import { CHARS_PER_MINUTE, askChars, countChars, enumeratePaths, renderTranscript } from "../src/story/transcript";
+import { ASK_ON, storyAsk } from "./helpers-ask";
 import { VALID_CONDITIONS, conditionsSlug, type Conditions, type Story } from "../src/story/types";
 import { STRINGS } from "../src/ui/strings";
 
@@ -131,5 +132,19 @@ describe("흥부와 놀부 원작 복원", () => {
   });
   it("이해 질문 중 하나는 p2n을 가리킨다", () => {
     expect(h.comprehension.some((q) => q.refersTo.includes("p2n"))).toBe(true);
+  });
+});
+
+describe("askChars·묻기 제외 대본", () => {
+  it("storyAsk c1: intro 10 + 대답 14 + 6 = 30", () => {
+    // intro "다람쥐한테 물어볼까?" → 10자, bird.q1 → 14자, bird.q2 → 6자
+    expect(askChars(storyAsk)).toEqual({ perPoint: [{ cpId: "c1", chars: 30 }], total: 30 });
+  });
+  it("실제 흥부 묻기 글자 수 > 0", () => expect(askChars(heungbu as unknown as Story).total).toBeGreaterThan(0));
+  it("ask 없는 이야기는 빈 표", () => expect(askChars(fixture as unknown as Story)).toEqual({ perPoint: [], total: 0 }));
+  it("askLayer 켠 설정으로도 대본은 묻기를 건너뛴다", () => {
+    const c: Conditions = { branching: true, mismatch: "converge", askWhy: false };
+    const tr = renderTranscript(storyAsk, c, [["c1a"], ["c2a"], ["c3a"]], ASK_ON);
+    expect(tr.nodeIds.filter((n) => n.includes(".ask"))).toEqual([]);
   });
 });

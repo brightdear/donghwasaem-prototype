@@ -1,5 +1,5 @@
 /**
- * `npm run transcripts` — docs/transcripts/<story>-<조합>.md(조합 7개 × 이야기)와 <story>-분량.md 생성.
+ * `npm run transcripts` — docs/transcripts/<story>-<조합>.md(조합 5개 × 이야기)와 <story>-분량.md 생성.
  * 실제 시나리오(src/data/heungbu.json, ant.json)가 없으면 tests/fixtures/mini.json으로 대체하고 경고한다.
  * 출력 폴더는 커밋하지 않는다(.gitignore).
  */
@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateStory } from "../src/story/schema";
-import { CHARS_PER_MINUTE, enumeratePaths, renderTranscript, type PathSpec, type Transcript } from "../src/story/transcript";
+import { CHARS_PER_MINUTE, askChars, enumeratePaths, renderTranscript, type PathSpec, type Transcript } from "../src/story/transcript";
 import { VALID_CONDITIONS, conditionsSlug, type Conditions, type Story } from "../src/story/types";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -105,6 +105,19 @@ function main(): void {
       const cell = (x: { tr: Transcript }) => `${x.tr.storyChars}자 · ${fmtMin(x.tr.storyMinutes)} (질문 포함 ${fmtMin(x.tr.totalMinutes)})`;
       rows.push(`| ${slug} | ${all.length} | ${cell(shortest)} | ${cell(original)} | ${cell(longest)} |`);
     }
+    const ask = askChars(story);
+    const askSection =
+      ask.perPoint.length === 0
+        ? []
+        : [
+            "",
+            "## 묻기 추가 글자 수(지점별 안내 + 가장 긴 대답 2개)",
+            "",
+            "| 지점 | 글자 수 |",
+            "|---|---|",
+            ...ask.perPoint.map((p) => `| ${p.cpId} | ${p.chars}자 |`),
+            `| 합계 | ${ask.total}자(${fmtMin(ask.total / CHARS_PER_MINUTE)}) |`,
+          ];
     const md = [
       header,
       "",
@@ -115,6 +128,7 @@ function main(): void {
       "| 조합 | 경로 수 | 최단 | 원작만 | 최장 |",
       "|---|---|---|---|---|",
       ...rows,
+      ...askSection,
       "",
     ].join("\n");
     writeFileSync(join(OUT, `${story.id}-분량.md`), md, "utf8");
