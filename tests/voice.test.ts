@@ -98,6 +98,30 @@ describe("voice controller", () => {
     expect(view(sim)).toMatchObject({ screen: "askAnswer", nodeId: "c1.ask.tori.q2" });
   });
 
+  it("대답 대기 중 마이크를 다시 눌러도 인식을 다시 시작하지 않고 기다리던 대답을 전한다", async () => {
+    let resolve: (o: AskOutput | null) => void = () => {};
+    const responder: AskResponder = { respond: () => new Promise((res) => { resolve = res; }) };
+    const { sim, rec, voice } = setup({ responder });
+    act(sim, { type: "voiceStart" });
+    voice.start();
+    rec.cb!.onResult({ transcript: "토리야 몇 개야", alternatives: [] });
+    // 엔진은 아직 listening(대답 대기). 두 번째 탭: 엔진은 무시하고 컨트롤러도 시작하지 않는다
+    expect(act(sim, { type: "voiceStart" })).toEqual([]);
+    voice.start();
+    expect(rec.starts).toBe(1);
+    resolve({ characterId: "tori", questionId: "q1", answerText: ["세 개야."], source: "keyword" });
+    await flush();
+    expect(view(sim)).toMatchObject({ screen: "askAnswer", nodeId: "c1.ask.tori.q1" });
+  });
+
+  it("인식 중(결과 전)에 start()가 다시 와도 asr.start는 1회", () => {
+    const { sim, rec, voice } = setup();
+    act(sim, { type: "voiceStart" });
+    voice.start();
+    voice.start();
+    expect(rec.starts).toBe(1);
+  });
+
   it("LLM으로 설정돼도 실제로 대답한 응답기(키워드 대체)와 실패 이유·지연을 남긴다", async () => {
     const responder: AskResponder = {
       respond: async () => ({ characterId: "tori", questionId: "q1", answerText: ["세 개야."], source: "keyword", fallbackReason: "timeout", latencyMs: 6000 }),

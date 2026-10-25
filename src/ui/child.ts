@@ -189,12 +189,15 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
   if (view.screen === "ask") {
     // 선택 직전 묻기: 인물 버튼(그림 밖 버튼) → 그 인물에게 할 질문 카드 → 이걸로 할래
     text.appendChild(el("p", "child-text prompt", view.prompt));
-    const panel = el("div", "ask-panel");
+    // 듣는 중에는 인물·질문 카드·이걸로 할래·마이크를 잠근다(엔진도 무시하지만 눈으로도 보이게)
+    const locked = view.voice === "listening";
+    const panel = el("div", locked ? "ask-panel listening-lock" : "ask-panel");
     const chars = el("div", "ask-characters");
     for (const c of view.characters) {
       const cls = c.id === view.selectedCharacterId ? "btn btn-character selected" : "btn btn-character";
       const b = el("button", cls);
       b.type = "button";
+      b.disabled = locked;
       if (c.portrait) {
         const img = el("img");
         img.alt = "";
@@ -217,6 +220,7 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
           card.disabled = true;
           card.classList.add("asked");
         }
+        if (locked && card) card.disabled = true;
       });
       panel.appendChild(list);
     }
@@ -226,15 +230,16 @@ export function renderChild(root: HTMLElement, view: View, dispatch: ChildDispat
     const sel = view.selectedQuestionId;
     const selQ = sel ? view.questions.find((q) => q.id === sel) : undefined;
     if (sel && selQ && !selQ.asked) {
-      actions.appendChild(button("btn btn-primary", STRINGS.confirm, () => dispatch({ type: "confirm", optionId: sel })));
+      const ok = button("btn btn-primary", STRINGS.confirm, () => dispatch({ type: "confirm", optionId: sel }));
+      ok.disabled = locked;
+      actions.appendChild(ok);
     }
     if (view.voice !== "hidden") {
-      const listening = view.voice === "listening";
-      actions.appendChild(
-        button(listening ? "btn btn-mic listening" : "btn btn-mic", listening ? STRINGS.listening : STRINGS.micLabel, () =>
-          dispatch({ type: "voiceStart" }),
-        ),
+      const mic = button(locked ? "btn btn-mic listening" : "btn btn-mic", locked ? STRINGS.listening : STRINGS.micLabel, () =>
+        dispatch({ type: "voiceStart" }),
       );
+      mic.disabled = locked;
+      actions.appendChild(mic);
     }
     if (wrap.classList.contains("has-scene")) {
       // 그림책 지면: 묻지 않고 넘어가기는 오른쪽 아래 책장 넘기기로

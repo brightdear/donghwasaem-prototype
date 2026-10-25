@@ -18,6 +18,12 @@ export function sceneBefore(story: Story, choicePointId: string): string[] {
   return [];
 }
 
+/** 묻기 화면의 마이크 상태. 묻기 화면이 아니면 null */
+export function askVoiceOf(s: EngineState): "hidden" | "idle" | "listening" | null {
+  const v = currentView(s);
+  return v.screen === "ask" ? v.voice : null;
+}
+
 export interface VoiceController {
   start(): void;
 }
@@ -34,6 +40,12 @@ export function createVoiceController(deps: {
   let asr: Asr | null = null;
   // 세대 토큰: start()마다 올린다. 응답 대기 중 새로 듣기 시작했으면 옛 결과는 버린다
   let gen = 0;
+  // 한 번의 듣기(인식 시작 ~ 대답 도착/실패) 동안 켜 둔다. 대답을 기다리는 동안 마이크를 다시 눌러도
+  // 인식을 새로 시작하거나 기다리던 대답을 버리지 않게 한다
+  let busy = false;
+  // busy를 켠 듣기의 표식(화면 번호·실패 횟수). 화면이 바뀌었거나 실패로 끝난 뒤 새로 듣는 것이면 옛 busy는 무효
+  let busyKey = "";
+  const episodeKey = (s: EngineState, cpId: string) => `${s.screenSeq}:${s.voiceFails[cpId] ?? 0}`;
   const responderKind = deps.responderKind ?? "keyword";
 
   function onResult(r: AsrResult): void {
@@ -41,6 +53,7 @@ export function createVoiceController(deps: {
     if (v.screen !== "ask") return; // 그 사이 화면이 바뀌었으면 무시
     const cp = deps.story.choicePoints.find((c) => c.id === v.choicePointId);
     if (!cp?.ask) {
+      busy = false;
       deps.dispatch({ type: "voiceFail", reason: "other" });
       return;
     }
@@ -60,6 +73,7 @@ export function createVoiceController(deps: {
       )
       .then((matched) => {
         if (myGen !== gen) return;
+        busy = false;
         // 로그에는 실제로 대답한 응답기와 실패 이유·지연을 남긴다(못 맞췄으면 설정된 응답기)
         deps.dispatch({
           type: "voiceResult",
@@ -72,11 +86,14 @@ export function createVoiceController(deps: {
         });
       })
       .catch(() => {
-        if (myGen === gen) deps.dispatch({ type: "voiceFail", reason: "other" });
+        if (myGen !== gen) return;
+        busy = false;
+        deps.dispatch({ type: "voiceFail", reason: "other" });
       });
   }
 
   function onFail(reason: AsrFailReason): void {
+    busy = false;
     deps.dispatch({ type: "voiceFail", reason });
   }
 
@@ -84,6 +101,9 @@ export function createVoiceController(deps: {
     start() {
       const v = currentView(deps.getState());
       if (v.screen !== "ask" || v.voice !== "listening") return;
+      // 같은 듣기가 아직 진행 중(인식 중이거나 대답 대기 중)이면 다시 시작하지 않는다
+      const key = episodeKey(deps.getState(), v.choicePointId);
+      if ((busy && busyKey === key) || asr?.isListening()) return;
       gen += 1;
       // Asr은 처음 한 번만 만들어 재사용
       asr ??= deps.makeAsr({ onResult, onFail });
@@ -91,6 +111,8 @@ export function createVoiceController(deps: {
         deps.dispatch({ type: "voiceFail", reason: "other" });
         return;
       }
+      busy = true;
+      busyKey = key;
       asr.start();
     },
   };

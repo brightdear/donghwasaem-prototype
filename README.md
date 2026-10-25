@@ -42,6 +42,9 @@ npm run transcripts  # 경로별 낭독 전문·분량표를 docs/transcripts/ �
 - R8(의미 규칙): 척추 passage 는 원작 선택지 `consequence` 까지의 사건을 전제할 수 있다. 다른 선택의 `consequence`·`bridge` 내용은 전제하지 않는다. 모든 경로가 원작 `consequence` 를 읽는다(다른 선택은 `bridge` 뒤에 원작 결과로 이어진다). 정답 사실은 척추 passage 안에만 둔다.
 - 조건은 5개 조합(분기 off / rewind·이유 있음·없음 / converge·이유 있음·없음)이다. `altEnding` 은 화면에서 고르지 않는다.
 - 묻기 층 설정(실험자 화면 설정, 세션 로그에 기록): `askLayer` 선택 전 카드로 묻기 켜기/끄기, `voiceAsk` 마이크로 말해서 묻기(브라우저 받아쓰기 지원 시), `askLlm` 준비 밖 질문을 LLM이 1~2문장으로 대답(API 키 필요, 키가 없거나 실패·6초 초과면 키워드 대답으로 대체). `voice_result.detail.responder` 에는 실제로 대답한 응답기(`llm`/`keyword`)가 기록되고 대체되면 `fallbackReason`·`latencyMs` 도 남는다.
+  - 개인정보: 크롬·엣지의 Web Speech 인식은 음성을 구글 서버로 보낸다(기기 내 처리 아님).
+  - 개인정보: `askLlm` 을 켜면 인식된 아이 발화 글이 대답 생성을 위해 Anthropic API로 전송된다(키는 실험자 기기에만 둔다). 이 두 가지는 실험 동의서에 적어야 한다.
+  - 운영: 준비 밖 질문(`ask_free`)은 횟수 제한이 없어 LLM 호출 비용이 늘 수 있다. 실험 전 사용 한도를 낮게 건 키를 쓴다.
 
 ## 그림 넣는 법
 

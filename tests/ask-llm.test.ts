@@ -57,7 +57,7 @@ describe("buildAskRequest", () => {
   });
   it("system에 핵심 규칙", () => {
     const sys = String(req.system);
-    for (const w of ["1인칭", "반말", "60자", "JSON", "결말", "점수", "이모지", "지시"]) expect(sys).toContain(w);
+    for (const w of ["1인칭", "반말", "60자", "JSON", "결말", "점수", "이모지", "지시", "사람 이름"]) expect(sys).toContain(w);
   });
 });
 

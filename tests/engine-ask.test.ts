@@ -234,6 +234,34 @@ describe("말로 묻기", () => {
     act(sim, { type: "voiceResult", transcript: "x", alternatives: [], matched: null });
     expect(sim.logs.find((e) => e.event_type === "voice_result")).toMatchObject({ detail: { responder: "keyword" } });
   });
+  it("듣는 중에는 listen·confirm·replay·askCharacter를 무시하고 askSkip은 된다(스펙 6.2)", () => {
+    const sim = toC1();
+    act(sim, { type: "askCharacter", characterId: "tori" });
+    act(sim, { type: "voiceStart" });
+    expect(act(sim, { type: "listen", optionId: "tori.q1" })).toEqual([]);
+    expect(act(sim, { type: "confirm", optionId: "tori.q1" })).toEqual([]);
+    expect(act(sim, { type: "replay" })).toEqual([]);
+    expect(act(sim, { type: "askCharacter", characterId: "bird" })).toEqual([]);
+    expect(view(sim)).toMatchObject({ screen: "ask", voice: "listening", selectedCharacterId: "tori" });
+    act(sim, { type: "askSkip" });
+    expect(sim.logs.some((e) => e.event_type === "ask_skip")).toBe(true);
+    expect(view(sim).screen).toBe("choice");
+  });
+  it("voice_result.detail.spoken: 준비된 질문이면 prepared, 준비 밖이면 free, 못 맞추면 없음", () => {
+    const a = toC1();
+    act(a, { type: "voiceStart" });
+    act(a, { type: "voiceResult", transcript: "토리야 몇 개야", alternatives: [], matched: { ...M, answerText: ["LLM 글"] }, responder: "llm" });
+    expect(a.logs.find((e) => e.event_type === "voice_result")).toMatchObject({ detail: { matched: "c1.ask.tori.q1", spoken: "prepared" } });
+    expect(view(a)).toMatchObject({ paragraphs: ["세 개야."] }); // 작성된 대답을 낭독
+    const b = toC1();
+    act(b, { type: "voiceStart" });
+    act(b, { type: "voiceResult", transcript: "집에 도토리 많아", alternatives: [], matched: { characterId: "tori", questionId: "free", answerText: ["다섯 개쯤 있어."] }, responder: "llm" });
+    expect(b.logs.find((e) => e.event_type === "voice_result")).toMatchObject({ detail: { matched: "c1.ask.tori.free", spoken: "free" } });
+    const c = toC1();
+    act(c, { type: "voiceStart" });
+    act(c, { type: "voiceResult", transcript: "x", alternatives: [], matched: null });
+    expect("spoken" in c.logs.find((e) => e.event_type === "voice_result")!.detail!).toBe(false);
+  });
   it("듣지 않는 중의 voiceResult·voiceFail은 무시", () => {
     const sim = toC1();
     expect(act(sim, { type: "voiceResult", transcript: "x", alternatives: [], matched: null })).toEqual([]);

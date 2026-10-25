@@ -21,7 +21,7 @@ import { createRunner, lateEvent, ttsEventToAction, type Runner } from "./ui/run
 import { createAsr, isAsrSupported } from "./asr";
 import { keywordResponder } from "./ask/responder";
 import { createLlmResponder } from "./ask/llm";
-import { createVoiceController } from "./ui/voice";
+import { askVoiceOf, createVoiceController } from "./ui/voice";
 import { renderExperimenter, type ExperimenterDeps } from "./ui/experimenter";
 import { renderChild } from "./ui/child";
 import { resolveArt, type ResolvedArt } from "./ui/art";
@@ -198,8 +198,10 @@ async function boot(root: HTMLElement): Promise<void> {
         responderKind: useAskLlm ? "llm" : "keyword",
       });
       const childDispatch: Parameters<typeof renderChild>[2] = (a) => {
+        // 엔진이 이번 dispatch로 idle → listening이 됐을 때만 인식을 시작한다(무시된 voiceStart는 건너뜀)
+        const before = a.type === "voiceStart" ? askVoiceOf(r.getState()) : null;
         r.dispatch(a);
-        if (a.type === "voiceStart") voice.start();
+        if (before === "idle" && askVoiceOf(r.getState()) === "listening") voice.start();
       };
       runner = r;
       r.start();

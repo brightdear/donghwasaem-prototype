@@ -634,6 +634,13 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
   }
 
   if (cur.t === "parent_handoff") return unchanged;
+  // 인식 중에는 다른 소리·조작을 막는다(스펙 6.2). 건너뛰기는 아이가 빠져나갈 수 있게 남긴다
+  if (
+    cur.t === "ask" &&
+    cur.listening &&
+    (action.type === "listen" || action.type === "confirm" || action.type === "replay" || action.type === "askCharacter")
+  )
+    return unchanged;
 
   switch (action.type) {
     case "next": {
@@ -752,6 +759,8 @@ export function step(state: EngineState, action: Action): StepResult<EngineState
           transcript: action.transcript,
           alternatives: action.alternatives,
           matched: matchedId,
+          // 실제로 낭독한 글: 준비된 질문이면 작성된 대답(LLM 글 아님), 준비 밖이면 LLM 대답
+          ...(free ? { spoken: "free" } : found ? { spoken: "prepared" } : {}),
           responder: action.responder ?? "keyword",
           ...(action.fallbackReason !== undefined ? { fallbackReason: action.fallbackReason } : {}),
           ...(action.latencyMs !== undefined ? { latencyMs: action.latencyMs } : {}),

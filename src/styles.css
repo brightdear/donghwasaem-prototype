@@ -46,6 +46,7 @@ body {
 .btn-character.selected { border: 6px solid #1d4ed8; }
 .btn-option.asked { opacity: 0.45; }
 .btn-mic.listening { animation: mic-pulse 1.2s ease-in-out infinite; }
+.btn-mic.listening:disabled { opacity: 1; } /* 듣는 중 표시는 흐리게 하지 않는다 */
 @keyframes mic-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 
 /*

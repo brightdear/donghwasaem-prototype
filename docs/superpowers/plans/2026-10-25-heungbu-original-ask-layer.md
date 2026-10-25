@@ -19,7 +19,7 @@
 - CSV 27열(`CSV_COLUMNS`) 불변. 새 정보는 event_type·node_id·question_id·option_id·detail에만.
 - `innerHTML` 금지, 모든 텍스트 `textContent`. 서사 밖 보상(별·점수·효과음·축하) 금지. 그림 위 핫스팟 금지(인물 버튼은 그림 밖).
 - 설정 이름 `voiceAsk`·`askLayer`. `voice`는 TTS 음성 이름으로 이미 사용 중이므로 쓰지 않는다.
-- 아이 발화 원문(인식 글)은 LLM 요청 본문에 넣지 않는다(설계 8절). 음성 자체는 저장하지 않는다.
+- 아이 발화 원문(인식 글)은 **리포트** LLM 요청에 넣지 않는다. 음성 대답 LLM(`askLlm`, 실험자 옵트인)만 예외로 인식 글을 Anthropic에 보낸다. 음성 자체는 저장하지 않는다.
 - `ant.json`은 수정 없이 모든 테스트를 통과해야 한다.
 - 커밋은 작업마다. 브랜치 `feat/original-ask-layer`에서 작업하고 main 머지·push는 마지막 작업에서 **사용자 확인 뒤**(push 즉시 Pages 배포됨). 커밋 메시지는 한국어 한 줄 + 빈 줄 + `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 
